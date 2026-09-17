@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
+import bookIcon from "./assets/book.png";
 
 const starterBooks = [
   { id: 1, title: 'The Secret History', author: 'Donna Tartt', color: '#65503e', genre: 'Literary fiction' },
@@ -62,20 +63,138 @@ function load(key, fallback) {
 }
 
 export default function App() {
-  const [catalog, setCatalog] = useState(() => load('bookify-catalog', starterBooks))
+  const [session, setSession] = useState({ status: 'loading', user: null, library: null })
+
+  useEffect(() => {
+    fetch('/api/me').then(response => response.json()).then(async ({ user }) => {
+      if (!user) return setSession({ status: 'guest', user: null, library: null })
+      const response = await fetch('/api/library')
+      if (!response.ok) throw new Error('Could not load your library.')
+      const { library } = await response.json()
+      setSession({ status: 'ready', user, library })
+    }).catch(() => setSession({ status: 'error', user: null, library: null }))
+  }, [])
+
+  async function signedIn(user) {
+    const response = await fetch('/api/library')
+    if (!response.ok) throw new Error('Could not load your library.')
+    const { library } = await response.json()
+    setSession({ status: 'ready', user, library })
+  }
+
+  async function logout() {
+    await fetch('/api/logout', { method: 'POST' })
+    setSession({ status: 'guest', user: null, library: null })
+  }
+
+  if (session.status === 'loading') return <div className="auth-loading">Opening Bookify…</div>
+  if (session.status === 'error') return <div className="auth-loading">Bookify could not connect. Check that the server is running, then reload the page.</div>
+  if (session.status === 'guest') return <AuthScreen onSignedIn={signedIn} />
+  return <Bookify key={session.user.id} user={session.user} initialLibrary={session.library} onLogout={logout} />
+}
+
+function AuthScreen({ onSignedIn }) {
+  const [mode, setMode] = useState('login')
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function submit(event) {
+    event.preventDefault()
+    setError('')
+    setBusy(true)
+    try {
+      const response = await fetch(`/api/${mode === 'login' ? 'login' : 'register'}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Something went wrong.')
+      await onSignedIn(data.user)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <main className="auth-page">
+      <div className="auth-brand">Bookify<span>✦</span></div>
+      <section className="auth-card">
+        <span className="eyebrow">YOUR LITERARY UNIVERSE</span>
+        <h1>{mode === 'login' ? 'Welcome back.' : 'Start your library.'}</h1>
+        <p>{mode === 'login' ? 'Sign in to your books, playlists and ratings.' : 'Create an account to keep your books in one place.'}</p>
+        <form onSubmit={submit}>
+          {mode === 'register' && <>
+            <label htmlFor="auth-name">Name</label>
+            <input id="auth-name" value={name} onChange={event => setName(event.target.value)} autoComplete="name" required minLength={2} maxLength={80} />
+          </>}
+          <label htmlFor="auth-email">Email</label>
+          <input id="auth-email" type="email" value={email} onChange={event => setEmail(event.target.value)} autoComplete="email" required />
+          <label htmlFor="auth-password">Password</label>
+          <input id="auth-password" type="password" value={password} onChange={event => setPassword(event.target.value)}
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required minLength={mode === 'register' ? 12 : undefined} />
+          {mode === 'register' && <small>Use at least 12 characters.</small>}
+          {error && <p className="auth-error" role="alert">{error}</p>}
+          <button className="primary-button" disabled={busy}>{busy ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}</button>
+        </form>
+        <button className="auth-switch" onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError('') }}>
+          {mode === 'login' ? 'New to Bookify? Create an account' : 'Already have an account? Sign in'}
+        </button>
+      </section>
+    </main>
+  )
+}
+
+function Bookify({ user, initialLibrary, onLogout }) {
+  const [catalog, setCatalog] = useState(initialLibrary?.catalog || starterBooks)
   const [page, setPage] = useState('Home')
-  const [lists, setLists] = useState(() => load('bookify-lists', initialLists))
-  const [ratings, setRatings] = useState(() => load('bookify-ratings', {}))
+  const [lists, setLists] = useState(initialLibrary?.lists || initialLists.map(list => ({ ...list, books: [] })))
+  const [ratings, setRatings] = useState(initialLibrary?.ratings || {})
   const [search, setSearch] = useState('')
   const [selectedList, setSelectedList] = useState(null)
   const [results, setResults] = useState([])
   const [searchStatus, setSearchStatus] = useState('idle')
   const [selectedBook, setSelectedBook] = useState(null)
   const [description, setDescription] = useState('')
+  const [saveError, setSaveError] = useState('')
+  const saveQueue = useRef(Promise.resolve())
 
   useEffect(() => {
-    localStorage.setItem('bookify-catalog', JSON.stringify(catalog))
-  }, [catalog])
+    const timer = setTimeout(() => { saveLibrary({ catalog, lists, ratings }).catch(() => {}) }, 300)
+    return () => clearTimeout(timer)
+  }, [catalog, lists, ratings])
+
+  function saveLibrary(library) {
+    saveQueue.current = saveQueue.current.catch(() => {}).then(async () => {
+      const response = await fetch('/api/library', {
+        method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(library),
+      })
+      if (!response.ok) throw new Error('Your library could not be saved.')
+      setSaveError('')
+    }).catch(error => { setSaveError(error.message); throw error })
+    return saveQueue.current
+  }
+
+  async function signOut() {
+    try {
+      await saveLibrary({ catalog, lists, ratings })
+      await onLogout()
+    } catch { setSaveError('Your library could not be saved. Please try again before signing out.') }
+  }
+
+  function importFromDevice() {
+    const oldLists = load('bookify-lists', null)
+    const oldRatings = load('bookify-ratings', null)
+    const oldCatalog = load('bookify-catalog', null)
+    if (oldLists && Array.isArray(oldLists)) setLists(oldLists)
+    if (oldRatings && typeof oldRatings === 'object') setRatings(oldRatings)
+    if (oldCatalog && Array.isArray(oldCatalog)) setCatalog(oldCatalog)
+  }
 
   useEffect(() => {
     const missing = starterBooks.filter(book => !catalog.find(item => item.id === book.id)?.coverId)
@@ -137,7 +256,6 @@ export default function App() {
 
   function saveLists(updated) {
     setLists(updated)
-    localStorage.setItem('bookify-lists', JSON.stringify(updated))
   }
 
   function createList() {
@@ -159,7 +277,6 @@ export default function App() {
   function rateBook(id, rating) {
     const updated = { ...ratings, [id]: rating }
     setRatings(updated)
-    localStorage.setItem('bookify-ratings', JSON.stringify(updated))
   }
 
   function saveBook(book) {
@@ -239,19 +356,19 @@ export default function App() {
 
       <main className="main">
         <header className="topbar">
-          <div className="mobile-brand">Bookify ✦</div>
+          <div className="mobile-brand">Bookify </div>
           <span className="eyebrow">YOUR LITERARY UNIVERSE</span>
-          <button className="profile-button" onClick={() => setPage('Profile')}>B</button>
+          <button className="profile-button" onClick={() => setPage('Profile')} aria-label="Open profile">{user.name.charAt(0).toUpperCase()}</button>
         </header>
 
         {page === 'Home' && (
           <>
             <section className="hero">
               <span className="eyebrow">WELCOME TO BOOKIFY</span>
-              <h1>Between the pages,<br /><em>find yourself.</em></h1>
-              <p>Collect your favorite stories, create beautiful book playlists and discover your next great read.</p>
+              <h1>Build your library,<br /><em>Share your taste.</em></h1>
+              <p>Collect your favorite stories, create your own book playlists and discover your next great read.</p>
               <button className="primary-button" onClick={() => setPage('Discover')}>Explore books →</button>
-              <div className="hero-flower">❦</div>
+              <div className="hero-flower">𝔅</div>
             </section>
 
             <div className="section-heading">
@@ -264,7 +381,9 @@ export default function App() {
                   setSelectedList(list.id)
                   setPage('Your Library')
                 }}>
-                  <span className="playlist-icon">✧</span>
+                  <span className="playlist-icon">
+                    <img src={bookIcon} alt="Book icon" />
+                  </span>
                   <strong>{list.name}</strong>
                   <small>{list.books.length} books</small>
                 </button>
@@ -348,8 +467,8 @@ export default function App() {
           <section>
             <span className="eyebrow">YOUR READING IDENTITY</span>
             <div className="profile-header">
-              <div className="profile-avatar">B</div>
-              <div><h1 className="page-title">Book lover</h1><p>@booklover</p></div>
+              <div className="profile-avatar">{user.name.charAt(0).toUpperCase()}</div>
+              <div><h1 className="page-title">{user.name}</h1><p>{user.email}</p></div>
             </div>
             <p className="intro">A little corner of the internet for all your favorite stories.</p>
             <div className="profile-stats">
@@ -370,7 +489,11 @@ export default function App() {
                 </button>
               ))}
             </div>
-            <p className="hint">Account creation and public profiles are coming in the next version.</p>
+            <div className="account-actions">
+              {localStorage.getItem('bookify-lists') && <button onClick={importFromDevice}>Import books saved on this device</button>}
+              <button onClick={signOut}>Sign out</button>
+            </div>
+            {saveError && <p className="auth-error" role="alert">{saveError}</p>}
           </section>
         )}
       </main>

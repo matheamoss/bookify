@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "BOOKIFY_ALLOWED_ORIGIN=http://localhost:5173 node server/index.js & API_PID=$!; trap 'kill $API_PID' EXIT; vite",
+    "server": "node server/index.js",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
