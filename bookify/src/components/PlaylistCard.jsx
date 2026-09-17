@@ -1,4 +1,4 @@
-export default function PlaylistCard({ list, onClick, artwork = false, active = false }) {
+export default function PlaylistCard({ list, onClick, active = false }) {
   return (
     <button className={`playlist-card${active ? ' reader-list-active' : ''}`} onClick={onClick}>
       <span className="playlist-icon" aria-hidden="true">

@@ -19,7 +19,7 @@ export default function HomePage({ catalog, lists, ratings, onNavigate, onSelect
         </div>
         <div className="playlist-grid">
           {lists.slice(0, 4).map(list => (
-            <PlaylistCard key={list.id} list={list} artwork onClick={() => onSelectList(list.id)} />
+            <PlaylistCard key={list.id} list={list} onClick={() => onSelectList(list.id)} />
           ))}
           <button className="playlist-card add-card" onClick={onCreateList}>
             <span className="playlist-icon" aria-hidden="true">＋</span>

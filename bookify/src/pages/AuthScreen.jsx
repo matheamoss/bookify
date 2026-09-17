@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { authApi } from '../lib/api'
+import AboutPage from './AboutPage'
 
 export default function AuthScreen({ onSignedIn }) {
   const [mode, setMode] = useState('login')
@@ -9,6 +10,7 @@ export default function AuthScreen({ onSignedIn }) {
   const [publicProfile, setPublicProfile] = useState(true)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [showAbout, setShowAbout] = useState(false)
 
   async function submit(event) {
     event.preventDefault()
@@ -28,6 +30,17 @@ export default function AuthScreen({ onSignedIn }) {
   function switchMode() {
     setMode(current => current === 'login' ? 'register' : 'login')
     setError('')
+  }
+
+  if (showAbout) {
+    return (
+      <main className="auth-page">
+        <div className="auth-about">
+          <button className="text-button" onClick={() => setShowAbout(false)}>← Back to sign in</button>
+          <AboutPage />
+        </div>
+      </main>
+    )
   }
 
   return (
@@ -69,6 +82,7 @@ export default function AuthScreen({ onSignedIn }) {
         <button className="auth-switch" onClick={switchMode}>
           {mode === 'login' ? 'New to Bookify? Create an account' : 'Already have an account? Sign in'}
         </button>
+        <button className="auth-about-link" onClick={() => setShowAbout(true)}>What is Bookify?</button>
       </section>
     </main>
   )

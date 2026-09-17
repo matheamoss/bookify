@@ -1,10 +1,11 @@
 const sections = [
-  { name: 'Home', icon: '⌂' },
-  { name: 'Discover', icon: '✧' },
-  { name: 'Your Library', icon: '▤' },
-  { name: 'Rankings', icon: '★' },
-  { name: 'Readers', icon: '♧' },
-  { name: 'Profile', icon: '♙' },
+  { name: 'Home', icon: '⌂', mobileLabel: 'Home' },
+  { name: 'Discover', icon: '✧', mobileLabel: 'Books' },
+  { name: 'Your Library', icon: '▤', mobileLabel: 'Library' },
+  { name: 'Rankings', icon: '★', mobileLabel: 'Top' },
+  { name: 'Readers', icon: '♧', mobileLabel: 'Readers' },
+  { name: 'Profile', icon: '♙', mobileLabel: 'Me' },
+  { name: 'About', label: 'About Bookify', icon: 'ⓘ', mobileLabel: 'About' },
 ]
 
 export function Sidebar({ page, lists, onNavigate, onSelectList, onCreateList }) {
@@ -17,7 +18,7 @@ export function Sidebar({ page, lists, onNavigate, onSelectList, onCreateList })
           <button key={section.name} className={page === section.name ? 'nav-active' : ''}
             onClick={() => onNavigate(section.name)} aria-current={page === section.name ? 'page' : undefined}>
             <span aria-hidden="true">{section.icon}</span>
-            <span>{section.name}</span>
+            <span>{section.label || section.name}</span>
           </button>
         ))}
       </nav>
@@ -47,8 +48,9 @@ export function MobileNav({ page, onNavigate }) {
     <nav className="mobile-nav" aria-label="Mobile navigation">
       {sections.map(section => (
         <button key={section.name} className={page === section.name ? 'nav-active' : ''}
-          onClick={() => onNavigate(section.name)} aria-current={page === section.name ? 'page' : undefined}>
-          {section.name}
+          onClick={() => onNavigate(section.name)} aria-current={page === section.name ? 'page' : undefined}
+          aria-label={section.label || section.name}>
+          {section.mobileLabel}
         </button>
       ))}
     </nav>

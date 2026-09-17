@@ -5,6 +5,7 @@ import { useBookDetails } from './hooks/useBookDetails'
 import { useBookSearch } from './hooks/useBookSearch'
 import { useLibrary } from './hooks/useLibrary'
 import { peopleApi } from './lib/api'
+import AboutPage from './pages/AboutPage'
 import DiscoverPage from './pages/DiscoverPage'
 import HomePage from './pages/HomePage'
 import LibraryPage from './pages/LibraryPage'
@@ -79,6 +80,7 @@ export default function BookifyApp({ user, initialLibrary, onLogout }) {
         )}
         {page === 'Rankings' && <RankingsPage catalog={catalog} ratings={ratings} />}
         {page === 'Readers' && <ReadersPage onBookDetails={details.openBook} />}
+        {page === 'About' && <AboutPage />}
         {page === 'Profile' && (
           <ProfilePage user={user} lists={lists} ratings={ratings} isPublic={isPublic}
             visibilityBusy={visibilityBusy} saveError={saveError}
