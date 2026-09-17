@@ -1,0 +1,90 @@
+.library-lists {
+  margin: 35px 0;
+}
+
+.selected-list {
+  border-top: 1px solid #d9cfb8;
+  padding-top: 25px;
+}
+
+.hint {
+  color: var(--brown);
+  font-size: 13px;
+  margin-top: 25px;
+}
+
+.rankings-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ranking-row {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  border-bottom: 1px solid #d8cfb9;
+  padding: 22px 0;
+}
+
+.rank-number {
+  font-family: Georgia, serif;
+  font-size: 35px;
+  color: var(--brown);
+}
+
+.ranking-row strong {
+  color: var(--green);
+}
+
+.ranking-row p {
+  color: var(--brown);
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+.rank-stars {
+  margin-left: auto;
+  color: #bd9346;
+  white-space: nowrap;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  margin: 30px 0;
+}
+
+.profile-avatar {
+  width: 100px;
+  height: 100px;
+  display: grid;
+  place-items: center;
+  font-size: 45px;
+}
+
+.profile-stats {
+  display: flex;
+  gap: 50px;
+  border-block: 1px solid #d9cfb8;
+  padding: 30px 0;
+  margin: 30px 0;
+}
+
+.profile-stats div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profile-stats strong {
+  font-family: Georgia, serif;
+  color: var(--green);
+  font-size: 30px;
+}
+
+.profile-stats span {
+  color: var(--brown);
+  font-size: 12px;
+}

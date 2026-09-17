@@ -1,0 +1,84 @@
+.reader-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+  margin: 18px 0 35px;
+}
+
+.reader-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  min-height: 160px;
+  padding: 20px;
+  background: #e7e0cc;
+  color: var(--green);
+  border: 1px solid #dfd5bc;
+  border-radius: 12px;
+  text-align: left;
+}
+.reader-card:hover, .reader-card:focus-visible { background: #dcd2b9; }
+.reader-card strong { font-size: 16px; }
+.reader-card small { color: var(--brown); font-size: 13px; }
+.reader-avatar {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--green);
+  color: var(--cream);
+  font: 27px Georgia, serif;
+  margin-bottom: 8px;
+}
+.reader-profile-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 22px;
+  margin: 24px 0;
+}
+.reader-profile-header .page-title { margin: 6px 0; }
+.reader-profile-header p { color: var(--brown); margin: 0; }
+.follow-button {
+  margin-left: auto;
+  padding: 12px 22px;
+  border: 1px solid var(--green);
+  border-radius: 25px;
+  background: var(--green);
+  color: var(--cream);
+  font-weight: 700;
+}
+.follow-button:disabled { opacity: .6; }
+.text-button {
+  border: 0;
+  background: none;
+  color: var(--green);
+  padding: 8px 0;
+  text-decoration: underline;
+}
+.reader-lists { margin: 20px 0 34px; }
+.reader-list-active { outline: 3px solid var(--gold); }
+.visibility-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  border: 1px solid #d8cfb9;
+  border-radius: 12px;
+  padding: 20px;
+  background: #eee7d7;
+  margin: 24px 0;
+}
+.visibility-panel strong { color: var(--green); }
+.visibility-panel p { max-width: 590px; color: var(--brown); line-height: 1.5; margin: 8px 0 0; }
+.visibility-panel button {
+  background: var(--green);
+  color: var(--cream);
+  border: 0;
+  border-radius: 25px;
+  padding: 11px 18px;
+  white-space: nowrap;
+}

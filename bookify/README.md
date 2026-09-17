@@ -1,16 +1,21 @@
-# React + Vite
+# Bookify
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A book library with playlists, ratings, profiles and reader following.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Use Node.js 24 or newer. Install dependencies with `npm ci`, then run `npm run dev`. The app opens at `http://localhost:5173`; the same command also starts the account API. Local account data is stored in `data/bookify.sqlite`, which is ignored by Git.
 
-## React Compiler
+Use `npm run build` to create the production site and `npm run lint` to check the code. Server deployment instructions are in [DEPLOYMENT.md](DEPLOYMENT.md).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Project layout
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- `src/App.jsx`: session loading and sign-in state.
+- `src/BookifyApp.jsx`: page selection and shared actions.
+- `src/pages/`: complete screens, including books, profile and readers.
+- `src/components/`: reusable book, playlist and navigation elements.
+- `src/hooks/`: library persistence, book search and book details.
+- `src/lib/`: API requests, book catalog helpers and local import.
+- `src/styles/`: styles grouped by page and component area.
+- `server/index.js`: HTTP entry point.
+- `server/api.js`, `auth.js`, `db.js`, `http.js`: routes, account logic, database and static files.

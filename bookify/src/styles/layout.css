@@ -1,0 +1,198 @@
+.app {
+  display: flex;
+  min-height: 100vh;
+  background: var(--cream);
+}
+
+button {
+  cursor: pointer;
+  font: inherit;
+}
+
+.sidebar {
+  width: 255px;
+  min-width: 255px;
+  background: var(--green);
+  color: var(--cream);
+  padding: 35px 22px;
+  min-height: 100vh;
+}
+
+.brand {
+  font-family: Georgia, serif;
+  font-size: 39px;
+  letter-spacing: -2px;
+}
+
+.brand span {
+  color: var(--gold);
+  font-size: 17px;
+  vertical-align: top;
+}
+
+.brand-subtitle {
+  font-family: Georgia, serif;
+  font-style: italic;
+  color: var(--gold);
+  font-size: 12px;
+  margin: 5px 0 55px;
+}
+
+.sidebar nav,
+.sidebar-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar button {
+  background: transparent;
+  color: #d6d8ca;
+  border: none;
+  text-align: left;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.sidebar nav button {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.sidebar button:hover,
+.sidebar .nav-active {
+  background: #355344;
+  color: white;
+}
+
+.sidebar-bottom {
+  margin-top: 55px;
+  border-top: 1px solid #466052;
+  padding-top: 25px;
+}
+
+.sidebar-bottom p {
+  color: var(--gold);
+  font-size: 10px;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+
+.sidebar .create-link {
+  color: var(--gold);
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: 0 55px 70px;
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+.topbar {
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.eyebrow {
+  color: var(--brown);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.profile-button,
+.profile-avatar {
+  background: var(--green);
+  color: var(--cream);
+  border: none;
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  font-family: Georgia, serif;
+  font-size: 22px;
+}
+
+.hero {
+  background: var(--green);
+  border-radius: 16px;
+  padding: 55px;
+  color: var(--cream);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 50px;
+}
+
+.hero .eyebrow {
+  color: var(--gold);
+}
+
+.hero h1 {
+  font-family: Georgia, serif;
+  font-weight: normal;
+  font-size: clamp(32px, 4vw, 55px);
+  line-height: 1.2;
+  margin: 25px 0;
+}
+
+.hero h1 em {
+  color: var(--gold);
+}
+
+.hero p {
+  color: #d7ded1;
+  max-width: 400px;
+  line-height: 1.8;
+  font-size: 14px;
+}
+
+.hero-flower {
+  position: absolute;
+  right: 45px;
+  bottom: 10px;
+  font-size: 130px;
+  color: #47604b;
+  pointer-events: none;
+}
+
+.primary-button {
+  background: var(--cream);
+  color: var(--green);
+  border: none;
+  padding: 15px 25px;
+  border-radius: 30px;
+  font-weight: 700;
+  margin-top: 25px;
+}
+
+.primary-button:hover {
+  background: var(--gold);
+}
+
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin: 35px 0 20px;
+}
+
+h2 {
+  font-family: Georgia, serif;
+  color: var(--green);
+  font-weight: normal;
+  font-size: 27px;
+}
+
+.section-heading button {
+  background: none;
+  border: none;
+  color: var(--brown);
+  font-size: 13px;
+}
+

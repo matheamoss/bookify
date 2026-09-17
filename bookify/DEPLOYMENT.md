@@ -13,3 +13,5 @@ The app binds to localhost by default. Set `BOOKIFY_PORT` if port 3000 is occupi
 Check the container with `docker compose ps` and `docker compose logs -f bookify`. Back up the `bookify_data` volume; it contains user accounts and libraries. Do not run `docker compose down -v` unless you intend to erase it.
 
 Registration uses name, email, and a password of at least 12 characters. Passwords are hashed; session cookies are HTTP-only. This version has no email verification or password reset, so add those before opening registration to a large public audience.
+
+Readers can search public profiles, follow each other, and view public playlists, saved books, and ratings. Email addresses remain private. Existing accounts are private after the database migration; their owners can make them public on the Profile page. New readers choose profile visibility when registering and can change it later.
