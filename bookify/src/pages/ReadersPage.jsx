@@ -10,6 +10,7 @@ function ReaderProfile({ selected, selectedList, onSelectList, onBack, onFollow,
   const lists = library.lists || []
   const catalog = library.catalog || []
   const ratings = library.ratings || {}
+  const reviews = library.reviews || {}
   const savedIds = savedBookIds(lists, ratings)
   const list = lists.find(item => String(item.id) === String(selectedList))
   const visibleBooks = catalog.filter(book => list
@@ -56,7 +57,7 @@ function ReaderProfile({ selected, selectedList, onSelectList, onBack, onFollow,
         {visibleBooks.length ? (
           <div className="book-grid">
             {visibleBooks.map(book => (
-              <BookCard key={book.id} book={book} ratings={ratings} readOnly onDetails={onBookDetails} />
+              <BookCard key={book.id} book={book} ratings={ratings} reviews={reviews} readOnly onDetails={onBookDetails} />
             ))}
           </div>
         ) : <p className="intro">No books here yet.</p>}

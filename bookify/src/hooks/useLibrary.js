@@ -7,6 +7,8 @@ export function useLibrary(initialLibrary) {
   const [catalog, setCatalog] = useState(initialLibrary?.catalog || starterBooks)
   const [lists, setLists] = useState(initialLibrary?.lists || emptyLists)
   const [ratings, setRatings] = useState(initialLibrary?.ratings || {})
+  const [reviews, setReviews] = useState(initialLibrary?.reviews || {})
+  const [ranking, setRanking] = useState(initialLibrary?.ranking || [])
   const [saveError, setSaveError] = useState('')
   const saveQueue = useRef(Promise.resolve())
 
@@ -21,10 +23,10 @@ export function useLibrary(initialLibrary) {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      saveNow({ catalog, lists, ratings }).catch(() => {})
+      saveNow({ catalog, lists, ratings, reviews, ranking }).catch(() => {})
     }, 300)
     return () => clearTimeout(timer)
-  }, [catalog, lists, ratings, saveNow])
+  }, [catalog, lists, ratings, reviews, ranking, saveNow])
 
   useEffect(() => {
     const missing = starterBooks.filter(book => !initialLibrary?.catalog?.find(item => item.id === book.id)?.coverId)
@@ -54,22 +56,55 @@ export function useLibrary(initialLibrary) {
     ))
   }
 
+  function removeBook(listId, bookId) {
+    setLists(current => current.map(list =>
+      String(list.id) === String(listId)
+        ? { ...list, books: list.books.filter(id => String(id) !== String(bookId)) }
+        : list
+    ))
+  }
+
   function rateBook(book, rating) {
     setCatalog(current => current.some(item => item.id === book.id) ? current : [...current, book])
     setRatings(current => ({ ...current, [book.id]: rating }))
+    setRanking(current => current.some(id => String(id) === String(book.id)) ? current : [...current, book.id])
+  }
+
+  function reviewBook(book, review) {
+    setCatalog(current => current.some(item => item.id === book.id) ? current : [...current, book])
+    setReviews(current => ({ ...current, [book.id]: review }))
+  }
+
+  function moveRankedBook(bookId, direction) {
+    setRanking(current => {
+      const index = current.findIndex(id => String(id) === String(bookId))
+      const nextIndex = index + direction
+      if (index < 0 || nextIndex < 0 || nextIndex >= current.length) return current
+      const next = [...current]
+      const [item] = next.splice(index, 1)
+      next.splice(nextIndex, 0, item)
+      return next
+    })
+  }
+
+  function removeRankedBook(bookId) {
+    setRanking(current => current.filter(id => String(id) !== String(bookId)))
   }
 
   function importFromDevice() {
     const oldLists = readLocal('bookify-lists')
     const oldRatings = readLocal('bookify-ratings')
+    const oldReviews = readLocal('bookify-reviews')
     const oldCatalog = readLocal('bookify-catalog')
     if (Array.isArray(oldLists)) setLists(oldLists)
     if (oldRatings && typeof oldRatings === 'object') setRatings(oldRatings)
+    if (oldReviews && typeof oldReviews === 'object') setReviews(oldReviews)
     if (Array.isArray(oldCatalog)) setCatalog(oldCatalog)
   }
 
   return {
-    catalog, lists, ratings, saveError, setSaveError,
-    createList, addBook, rateBook, importFromDevice, saveNow,
+    catalog, lists, ratings, reviews, ranking, saveError, setSaveError,
+    createList, addBook, removeBook, rateBook, reviewBook, moveRankedBook, removeRankedBook,
+    importFromDevice, saveNow,
   }
 }

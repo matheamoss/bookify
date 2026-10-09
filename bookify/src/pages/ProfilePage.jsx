@@ -3,8 +3,10 @@ import { hasLocalLibrary } from '../lib/localLibrary'
 
 export default function ProfilePage({
   user, lists, ratings, isPublic, visibilityBusy, saveError,
-  onToggleVisibility, onSelectList, onImport, onSignOut,
+  onToggleVisibility, onSelectList, onSelectLibraryView, onImport, onSignOut,
 }) {
+  const savedBookCount = new Set(lists.flatMap(list => list.books.map(String))).size
+
   return (
     <section aria-labelledby="profile-heading">
       <span className="eyebrow">YOUR READING IDENTITY</span>
@@ -13,6 +15,7 @@ export default function ProfilePage({
         <div>
           <h1 className="page-title" id="profile-heading">{user.name}</h1>
           <p>{user.email}</p>
+          <span className="verification-note">Email saved for this account. Mail verification can be enabled when an email provider is connected.</span>
         </div>
       </header>
       <p className="intro">A little corner of the internet for all your favorite stories.</p>
@@ -28,9 +31,15 @@ export default function ProfilePage({
         </button>
       </section>
       <div className="profile-stats" aria-label="Reading statistics">
-        <div><strong>{lists.length}</strong><span>Playlists</span></div>
-        <div><strong>{Object.keys(ratings).length}</strong><span>Rated books</span></div>
-        <div><strong>{lists.reduce((sum, list) => sum + list.books.length, 0)}</strong><span>Books saved</span></div>
+        <button onClick={() => onSelectLibraryView(null)}>
+          <strong>{lists.length}</strong><span>Playlists</span>
+        </button>
+        <button onClick={() => onSelectLibraryView('__rated')}>
+          <strong>{Object.keys(ratings).length}</strong><span>Rated books</span>
+        </button>
+        <button onClick={() => onSelectLibraryView('__saved')}>
+          <strong>{savedBookCount}</strong><span>Books saved</span>
+        </button>
       </div>
       <section aria-labelledby="my-playlists-heading">
         <h2 id="my-playlists-heading">My playlists</h2>

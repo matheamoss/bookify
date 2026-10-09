@@ -1,0 +1,20 @@
+services:
+  bookify-dev:
+    image: node:24-alpine
+    working_dir: /app
+    command: sh -c "npm ci && npm run dev:docker"
+    environment:
+      NODE_ENV: development
+      DB_PATH: /data/bookify.sqlite
+      COOKIE_SECURE: "false"
+      BOOKIFY_ENABLE_TEST_USER: "true"
+    ports:
+      - "${BOOKIFY_DEV_BIND:-127.0.0.1}:${BOOKIFY_DEV_PORT:-5173}:5173"
+    volumes:
+      - .:/app
+      - bookify_dev_node_modules:/app/node_modules
+      - bookify_dev_data:/data
+
+volumes:
+  bookify_dev_node_modules:
+  bookify_dev_data:

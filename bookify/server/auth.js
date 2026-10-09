@@ -36,7 +36,11 @@ export function currentUser(req) {
 export function sameOrigin(req) {
   const origin = req.headers.origin
   if (!origin) return true
-  if (process.env.BOOKIFY_ALLOWED_ORIGIN && origin === process.env.BOOKIFY_ALLOWED_ORIGIN) return true
+  const allowedOrigins = (process.env.BOOKIFY_ALLOWED_ORIGIN || '')
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean)
+  if (allowedOrigins.includes(origin)) return true
   try { return new URL(origin).host === req.headers.host } catch { return false }
 }
 

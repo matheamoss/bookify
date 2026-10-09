@@ -27,6 +27,10 @@
   padding: 22px 0;
 }
 
+.ranking-row > div:first-of-type {
+  min-width: 0;
+}
+
 .rank-number {
   font-family: Georgia, serif;
   font-size: 35px;
@@ -47,6 +51,32 @@
   margin-left: auto;
   color: #bd9346;
   white-space: nowrap;
+}
+
+.ranking-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: 0;
+}
+
+.ranking-actions button,
+.remove-book-button {
+  border: 1px solid #d7ccb4;
+  background: #fffaf0;
+  color: var(--green);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 12px;
+}
+
+.ranking-actions button:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+.remove-book-button {
+  width: 100%;
+  margin-top: 10px;
 }
 
 .profile-header {
@@ -78,6 +108,20 @@
   gap: 8px;
 }
 
+.profile-stats button {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.profile-stats button:hover span {
+  text-decoration: underline;
+}
+
 .profile-stats strong {
   font-family: Georgia, serif;
   color: var(--green);
@@ -87,4 +131,12 @@
 .profile-stats span {
   color: var(--brown);
   font-size: 12px;
+}
+
+.verification-note {
+  display: block;
+  color: var(--brown);
+  font-size: 12px;
+  margin-top: 8px;
+  max-width: 520px;
 }

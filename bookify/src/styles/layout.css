@@ -24,6 +24,19 @@ button {
   letter-spacing: -2px;
 }
 
+.sidebar .brand {
+  display: block;
+  width: 100%;
+  color: var(--cream);
+  padding: 0;
+  text-align: left;
+}
+
+.sidebar .brand:hover {
+  background: transparent;
+  color: var(--gold);
+}
+
 .brand span {
   color: var(--gold);
   font-size: 17px;
@@ -195,4 +208,3 @@ h2 {
   color: var(--brown);
   font-size: 13px;
 }
-

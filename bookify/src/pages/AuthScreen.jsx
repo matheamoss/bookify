@@ -2,6 +2,12 @@ import { useState } from 'react'
 import { authApi } from '../lib/api'
 import AboutPage from './AboutPage'
 
+const testCredentials = {
+  email: 'test@bookify.local',
+  password: 'Testbruker123!',
+}
+const showTestUser = import.meta.env.DEV || import.meta.env.VITE_ENABLE_TEST_USER === 'true'
+
 export default function AuthScreen({ onSignedIn }) {
   const [mode, setMode] = useState('login')
   const [name, setName] = useState('')
@@ -29,6 +35,13 @@ export default function AuthScreen({ onSignedIn }) {
 
   function switchMode() {
     setMode(current => current === 'login' ? 'register' : 'login')
+    setError('')
+  }
+
+  function useTestUser() {
+    setMode('login')
+    setEmail(testCredentials.email)
+    setPassword(testCredentials.password)
     setError('')
   }
 
@@ -79,6 +92,11 @@ export default function AuthScreen({ onSignedIn }) {
             {busy ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}
           </button>
         </form>
+        {showTestUser && mode === 'login' && (
+          <button className="test-login-button" type="button" onClick={useTestUser}>
+            Use test user
+          </button>
+        )}
         <button className="auth-switch" onClick={switchMode}>
           {mode === 'login' ? 'New to Bookify? Create an account' : 'Already have an account? Sign in'}
         </button>

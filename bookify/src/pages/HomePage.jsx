@@ -1,7 +1,9 @@
 import BookCard from '../components/BookCard'
 import PlaylistCard from '../components/PlaylistCard'
 
-export default function HomePage({ catalog, lists, ratings, onNavigate, onSelectList, onCreateList, onBookDetails, onRate, onAdd }) {
+export default function HomePage({
+  catalog, lists, ratings, reviews, onNavigate, onSelectList, onCreateList, onBookDetails, onRate, onReview, onAdd,
+}) {
   return (
     <>
       <section className="hero">
@@ -37,7 +39,7 @@ export default function HomePage({ catalog, lists, ratings, onNavigate, onSelect
         <div className="book-grid">
           {catalog.slice(0, 4).map(book => (
             <BookCard key={book.id} book={book} lists={lists} ratings={ratings}
-              onDetails={onBookDetails} onRate={onRate} onAdd={onAdd} />
+              reviews={reviews} onDetails={onBookDetails} onRate={onRate} onReview={onReview} onAdd={onAdd} />
           ))}
         </div>
       </section>

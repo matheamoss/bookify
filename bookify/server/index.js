@@ -2,7 +2,8 @@ import http from 'node:http'
 import { api } from './api.js'
 import { send, staticFile } from './http.js'
 
-const port = Number(process.env.PORT || 3001)
+const port = Number(process.env.BOOKIFY_PORT || process.env.PORT || 3001)
+const bind = process.env.BOOKIFY_LISTEN_HOST || '127.0.0.1'
 
 http.createServer(async (req, res) => {
   try {
@@ -13,4 +14,4 @@ http.createServer(async (req, res) => {
   } catch (error) {
     send(res, error.message === 'Request is too large.' ? 413 : 400, { error: error.message === 'Request is too large.' ? error.message : 'Invalid request.' })
   }
-}).listen(port, '0.0.0.0', () => console.log(`Bookify is listening on port ${port}`))
+}).listen(port, bind, () => console.log(`Bookify is listening on ${bind}:${port}`))

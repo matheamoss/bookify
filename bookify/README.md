@@ -2,11 +2,21 @@
 
 A book library with playlists, ratings, profiles and reader following.
 
-## Run locally
+## Run with Docker
 
-Use Node.js 24 or newer. Install dependencies with `npm ci`, then run `npm run dev`. The app opens at `http://localhost:5173`; the same command also starts the account API. Local account data is stored in `data/bookify.sqlite`, which is ignored by Git.
+Use Docker for both development and production workflows.
 
-Use `npm run build` to create the production site and `npm run lint` to check the code. Server deployment instructions are in [DEPLOYMENT.md](DEPLOYMENT.md).
+- `make dev` starts the local hot-reload app at `http://127.0.0.1:5173`.
+- `make dev-detach` starts local development in the background.
+- `make dev-down` stops local development.
+- `make lint` runs ESLint in Docker.
+- `make build` runs the production frontend build in Docker.
+- `make prod` builds and starts the production container.
+- `make prod-logs` follows production logs.
+
+Local Docker development stores test data in the `bookify_dev_data` volume. Production stores account and library data in the `bookify_data` volume.
+
+Node.js 24 or newer is still supported for direct local work with `npm ci` and `npm run dev`, but Docker/Make is the preferred path. Server deployment instructions are in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Project layout
 

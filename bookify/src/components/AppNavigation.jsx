@@ -11,7 +11,9 @@ const sections = [
 export function Sidebar({ page, lists, onNavigate, onSelectList, onCreateList }) {
   return (
     <aside className="sidebar">
-      <div className="brand">Bookify<span>✦</span></div>
+      <button className="brand" onClick={() => onNavigate('Home')} aria-label="Go to Bookify home">
+        Bookify<span>✦</span>
+      </button>
       <p className="brand-subtitle">A home for every story.</p>
       <nav aria-label="Main navigation">
         {sections.map(section => (
@@ -31,10 +33,10 @@ export function Sidebar({ page, lists, onNavigate, onSelectList, onCreateList })
   )
 }
 
-export function Topbar({ user, onProfile }) {
+export function Topbar({ user, onHome, onProfile }) {
   return (
     <header className="topbar">
-      <div className="mobile-brand">Bookify</div>
+      <button className="mobile-brand" onClick={onHome}>Bookify</button>
       <span className="eyebrow">YOUR LITERARY UNIVERSE</span>
       <button className="profile-button" onClick={onProfile} aria-label="Open profile">
         {user.name.charAt(0).toUpperCase()}

@@ -1,22 +1,19 @@
 services:
   bookify:
     build: .
+    image: bookify:prod
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      PORT: 3000
+      BOOKIFY_PORT: ${BOOKIFY_PORT:-3000}
+      BOOKIFY_LISTEN_HOST: 0.0.0.0
       DB_PATH: /data/bookify.sqlite
       STATIC_ROOT: /app/dist
       COOKIE_SECURE: "true"
+    ports:
+      - "${BOOKIFY_BIND:-127.0.0.1}:${BOOKIFY_PORT:-3000}:${BOOKIFY_PORT:-3000}"
     volumes:
       - bookify_data:/data
-    networks:
-      - cloudflare
 
 volumes:
   bookify_data:
-
-networks:
-  cloudflare:
-    external: true
-

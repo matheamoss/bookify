@@ -1,6 +1,6 @@
 import BookCard from '../components/BookCard'
 
-export default function DiscoverPage({ catalog, lists, ratings, search, onBookDetails, onRate, onAdd }) {
+export default function DiscoverPage({ catalog, lists, ratings, reviews, search, onBookDetails, onRate, onReview, onAdd }) {
   const { query, setQuery, results, status } = search
   const visibleBooks = query.trim().length >= 2
     ? results
@@ -23,7 +23,7 @@ export default function DiscoverPage({ catalog, lists, ratings, search, onBookDe
       <div className="book-grid">
         {visibleBooks.map(book => (
           <BookCard key={book.id} book={book} lists={lists} ratings={ratings}
-            onDetails={onBookDetails} onRate={onRate} onAdd={onAdd} />
+            reviews={reviews} onDetails={onBookDetails} onRate={onRate} onReview={onReview} onAdd={onAdd} />
         ))}
       </div>
       {status === 'done' && results.length === 0 && <p>No books found. Try another title or author.</p>}

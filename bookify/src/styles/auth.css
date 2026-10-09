@@ -47,6 +47,16 @@
 .auth-card .primary-button { background: var(--green); color: var(--cream); margin-top: 26px; }
 .auth-card .primary-button:disabled { opacity: .6; cursor: wait; }
 .auth-switch { background: none; border: 0; color: var(--green); text-decoration: underline; margin-top: 22px; padding: 0; }
+.test-login-button {
+  width: 100%;
+  border: 1px solid #cbbf9f;
+  background: #fffaf0;
+  color: var(--green);
+  border-radius: 7px;
+  padding: 12px;
+  margin-top: 14px;
+  font-weight: 700;
+}
 .auth-about-link { display: block; background: none; border: 0; color: var(--green); text-decoration: underline; margin-top: 16px; padding: 0; }
 .auth-about { width: min(100%, 1000px); background: var(--cream); border-radius: 18px; padding: clamp(18px, 4vw, 34px); }
 .auth-about > .text-button { margin-bottom: 12px; }
