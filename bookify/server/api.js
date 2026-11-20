@@ -2,7 +2,7 @@ import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { db } from './db.js'
 import { send } from './http.js'
 import { emailEnabled, sendPasswordResetEmail, sendVerificationEmail } from './email.js'
-import { readJson, currentUser, sameOrigin, limited, passwordHash, makeSession, makeEmailToken, consumeEmailToken, tokenHash, cookie, cookieName } from './auth.js'
+import { readJson, currentUser, sameOrigin, limited, clearLimit, passwordHash, makeSession, makeEmailToken, consumeEmailToken, tokenHash, cookie, cookieName } from './auth.js'
 
 const emailRoutes = ['/api/verify-email', '/api/resend-verification', '/api/forgot-password', '/api/reset-password']
 const validEmail = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
@@ -136,6 +136,7 @@ export async function api(req, res, pathname) {
     if (!user || !timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(user.password_hash, 'hex')))
       return send(res, 401, { error: 'Incorrect email or password.' })
     if (emailEnabled && !user.email_verified_at) return send(res, 403, { error: 'Confirm your email before signing in.', needsVerification: true })
+    clearLimit(req, cleanEmail)
     return makeSession(res, user)
   }
 

@@ -36,16 +36,24 @@ export function currentUser(req) {
 export function sameOrigin(req) {
   const origin = req.headers.origin
   if (!origin) return true
-  const allowedOrigins = (process.env.BOOKIFY_ALLOWED_ORIGIN || '')
+  // BOOKIFY_PUBLIC_URL is allowed too, so requests keep working behind a proxy that rewrites the Host header.
+  const allowedOrigins = [process.env.BOOKIFY_ALLOWED_ORIGIN || '', process.env.BOOKIFY_PUBLIC_URL || '']
+    .join(',')
     .split(',')
-    .map(item => item.trim())
+    .map(item => item.trim().replace(/\/$/, ''))
     .filter(Boolean)
   if (allowedOrigins.includes(origin)) return true
   try { return new URL(origin).host === req.headers.host } catch { return false }
 }
 
+const limitKey = (req, email) => `${req.socket.remoteAddress}:${email}`
+
+export function clearLimit(req, email) {
+  attempts.delete(limitKey(req, email))
+}
+
 export function limited(req, email) {
-  const key = `${req.socket.remoteAddress}:${email}`
+  const key = limitKey(req, email)
   const now = Date.now()
   const entry = attempts.get(key)
   if (!entry || entry.until < now) {
