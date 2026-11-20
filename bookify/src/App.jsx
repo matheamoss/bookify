@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import BookifyApp from './BookifyApp'
 import { authApi, libraryApi } from './lib/api'
+import { navigateTo } from './lib/router'
 import AuthScreen from './pages/AuthScreen'
 import './App.css'
 
@@ -32,6 +33,7 @@ export default function App() {
   async function logout() {
     await authApi.logout()
     setSession({ status: 'guest', user: null, library: null })
+    navigateTo('/')
   }
 
   if (session.status === 'loading') return <main className="auth-loading">Opening Bookify…</main>
@@ -41,5 +43,5 @@ export default function App() {
   if (session.status === 'guest') return <AuthScreen onSignedIn={signedIn} emailEnabled={emailEnabled} />
   return <BookifyApp key={session.user.id} user={session.user}
     initialLibrary={session.library} initialVersion={session.version} onLogout={logout}
-    onAccountDeleted={() => setSession({ status: 'guest', user: null, library: null })} />
+    onAccountDeleted={() => { setSession({ status: 'guest', user: null, library: null }); navigateTo('/') }} />
 }

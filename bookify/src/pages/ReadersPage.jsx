@@ -66,7 +66,7 @@ function ReaderProfile({ selected, selectedList, onSelectList, onBack, onFollow,
   )
 }
 
-export default function ReadersPage({ onBookDetails }) {
+export default function ReadersPage({ personId, onOpenPerson, onBack, onBookDetails }) {
   const [query, setQuery] = useState('')
   const [people, setPeople] = useState([])
   const [following, setFollowing] = useState([])
@@ -98,18 +98,15 @@ export default function ReadersPage({ onBookDetails }) {
       .catch(err => setError(err.message))
   }, [])
 
-  async function openProfile(id) {
-    setError('')
-    setBusy(true)
-    try {
-      setSelected(await peopleApi.profile(id))
-      setSelectedList(null)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setBusy(false)
-    }
-  }
+  // The open profile comes from the URL (/readers/:id), so back/forward and shared links work.
+  useEffect(() => {
+    if (!personId) return
+    let active = true
+    peopleApi.profile(personId)
+      .then(data => { if (active) { setSelected(data); setSelectedList(null); setError('') } })
+      .catch(err => { if (active) { setSelected(null); setError(err.message) } })
+    return () => { active = false }
+  }, [personId])
 
   async function toggleFollow() {
     if (!selected) return
@@ -128,9 +125,20 @@ export default function ReadersPage({ onBookDetails }) {
     }
   }
 
-  if (selected) {
-    return <ReaderProfile selected={selected} selectedList={selectedList} onSelectList={setSelectedList}
-      onBack={() => { setSelected(null); setSelectedList(null) }} onFollow={toggleFollow}
+  const openProfile = selected?.person.id === personId ? selected : null
+  if (personId && !openProfile && !error) return <p role="status">Opening profile…</p>
+  if (personId && !openProfile) {
+    return (
+      <section>
+        <button className="text-button" onClick={onBack}>← Back to readers</button>
+        <p className="auth-error" role="alert">{error}</p>
+      </section>
+    )
+  }
+
+  if (personId) {
+    return <ReaderProfile selected={openProfile} selectedList={selectedList} onSelectList={setSelectedList}
+      onBack={onBack} onFollow={toggleFollow}
       busy={busy} error={error} onBookDetails={onBookDetails} />
   }
 
@@ -147,7 +155,7 @@ export default function ReadersPage({ onBookDetails }) {
         <section aria-labelledby="following-heading">
           <h2 id="following-heading">Following</h2>
           <div className="reader-grid">
-            {following.map(person => <ReaderCard key={person.id} person={person} onOpen={openProfile} disabled={busy} />)}
+            {following.map(person => <ReaderCard key={person.id} person={person} onOpen={onOpenPerson} disabled={busy} />)}
           </div>
         </section>
       )}
@@ -156,7 +164,7 @@ export default function ReadersPage({ onBookDetails }) {
         {status === 'loading' && <p role="status">Finding readers…</p>}
         {status === 'ready' && people.length === 0 && <p>No public profiles found.</p>}
         <div className="reader-grid">
-          {people.map(person => <ReaderCard key={person.id} person={person} onOpen={openProfile} disabled={busy} />)}
+          {people.map(person => <ReaderCard key={person.id} person={person} onOpen={onOpenPerson} disabled={busy} />)}
         </div>
       </section>
     </section>
