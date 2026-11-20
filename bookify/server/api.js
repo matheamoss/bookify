@@ -63,7 +63,10 @@ export async function api(req, res, pathname) {
       .run(user.id, user.name, user.email, hash, salt, Date.now(), user.is_public, emailEnabled ? null : Date.now())
     if (!emailEnabled) return makeSession(res, user)
     const token = makeEmailToken(user.id, 'verify')
-    if (!await deliver(res, () => sendVerificationEmail({ to: user.email, name: user.name, token }))) return
+    if (!await deliver(res, () => sendVerificationEmail({ to: user.email, name: user.name, token }))) {
+      db.prepare('DELETE FROM users WHERE id = ?').run(user.id)
+      return
+    }
     return send(res, 201, { requiresVerification: true, email: user.email })
   }
 
