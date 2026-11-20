@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { authApi } from '../lib/api'
-import AboutPage from './AboutPage'
 
 const testCredentials = {
   email: 'test@bookify.local',
@@ -8,20 +7,15 @@ const testCredentials = {
 }
 const showTestUser = import.meta.env.DEV || import.meta.env.VITE_ENABLE_TEST_USER === 'true'
 
-function readActionLink(emailEnabled) {
-  if (!emailEnabled) return {}
-  const query = new URLSearchParams(window.location.search)
-  return { verify: query.get('verify'), reset: query.get('reset') }
-}
-
 function clearActionLink() {
   window.history.replaceState({}, '', window.location.pathname)
 }
 
-export default function AuthScreen({ onSignedIn, emailEnabled = false }) {
-  const [{ verify: verificationToken, reset: resetToken }] = useState(() => readActionLink(emailEnabled))
+// Sign-in and registration dialog. `request` says why it opened ({ reason, mode, verify, reset }).
+export default function AuthDialog({ request, emailEnabled, onClose, onSignedIn }) {
+  const { reason, verify: verificationToken, reset: resetToken } = request
   const verificationStarted = useRef(false)
-  const [mode, setMode] = useState(resetToken ? 'reset' : verificationToken ? 'verifying' : 'login')
+  const [mode, setMode] = useState(resetToken ? 'reset' : verificationToken ? 'verifying' : request.mode || 'login')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -29,7 +23,6 @@ export default function AuthScreen({ onSignedIn, emailEnabled = false }) {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
-  const [showAbout, setShowAbout] = useState(false)
 
   useEffect(() => {
     if (!verificationToken || verificationStarted.current) return
@@ -45,6 +38,12 @@ export default function AuthScreen({ onSignedIn, emailEnabled = false }) {
         setMode('login')
       })
   }, [onSignedIn, verificationToken])
+
+  useEffect(() => {
+    const onKeyDown = event => { if (event.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
 
   async function submit(event) {
     event.preventDefault()
@@ -102,22 +101,8 @@ export default function AuthScreen({ onSignedIn, emailEnabled = false }) {
     setError('')
   }
 
-  if (showAbout) {
-    return (
-      <main className="auth-page">
-        <div className="auth-about">
-          <button className="text-button" onClick={() => setShowAbout(false)}>← Back to sign in</button>
-          <AboutPage />
-        </div>
-      </main>
-    )
-  }
-
-  if (mode === 'verifying') {
-    return <main className="auth-loading">Confirming your email…</main>
-  }
-
   const headings = {
+    verifying: ['Confirming your email…', ''],
     login: ['Welcome back.', 'Sign in to your books, playlists and ratings.'],
     register: ['Start your library.', 'Create an account to keep your books in one place.'],
     forgot: ['Reset your password.', 'Enter your email and we’ll send you a secure reset link.'],
@@ -125,16 +110,18 @@ export default function AuthScreen({ onSignedIn, emailEnabled = false }) {
     'verify-pending': ['Check your inbox.', `We sent a confirmation link to ${email || 'your email address'}.`],
   }
   const [heading, description] = headings[mode]
+  const showReason = reason && ['login', 'register'].includes(mode)
 
   return (
-    <main className="auth-page">
-      <div className="auth-brand">Bookify<span>✦</span></div>
-      <section className="auth-card" aria-labelledby="auth-heading">
-        <span className="eyebrow">YOUR LITERARY UNIVERSE</span>
+    <div className="auth-dialog-backdrop" onClick={onClose}>
+      <section className="auth-card auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-heading"
+        onClick={event => event.stopPropagation()}>
+        <button className="dialog-close" onClick={onClose} aria-label="Close">×</button>
+        {showReason && <p className="auth-reason">{reason}</p>}
         <h1 id="auth-heading">{heading}</h1>
-        <p>{description}</p>
+        {description && <p>{description}</p>}
 
-        {mode === 'verify-pending' ? (
+        {mode === 'verifying' ? null : mode === 'verify-pending' ? (
           <div className="auth-actions">
             {error && <p className="auth-error" role="alert">{error}</p>}
             {message && <p className="auth-message" role="status">{message}</p>}
@@ -156,7 +143,7 @@ export default function AuthScreen({ onSignedIn, emailEnabled = false }) {
               <>
                 <label htmlFor="auth-email">Email</label>
                 <input id="auth-email" type="email" value={email} onChange={event => setEmail(event.target.value)}
-                  autoComplete="email" required />
+                  autoComplete="email" required autoFocus />
               </>
             )}
             {mode !== 'forgot' && (
@@ -172,7 +159,7 @@ export default function AuthScreen({ onSignedIn, emailEnabled = false }) {
                 <small>Use at least 12 characters.</small>
                 <label className="visibility-choice">
                   <input type="checkbox" checked={publicProfile} onChange={event => setPublicProfile(event.target.checked)} />
-                  Let other readers find my profile and see my book lists
+                  Make my profile public, so anyone can find me and see my book lists
                 </label>
               </>
             )}
@@ -197,8 +184,7 @@ export default function AuthScreen({ onSignedIn, emailEnabled = false }) {
           </button>
         )}
         {['forgot', 'reset'].includes(mode) && <button className="auth-switch" onClick={() => switchMode('login')}>Back to sign in</button>}
-        <button className="auth-about-link" onClick={() => setShowAbout(true)}>What is Bookify?</button>
       </section>
-    </main>
+    </div>
   )
 }

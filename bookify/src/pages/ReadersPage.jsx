@@ -3,6 +3,7 @@ import BookCard from '../components/BookCard'
 import PlaylistCard from '../components/PlaylistCard'
 import ReaderCard from '../components/ReaderCard'
 import { peopleApi } from '../lib/api'
+import { useAuth } from '../lib/authContext'
 import { savedBookIds } from '../lib/books'
 
 function ReaderProfile({ selected, selectedList, onSelectList, onBack, onFollow, busy, error, onBookDetails }) {
@@ -67,6 +68,7 @@ function ReaderProfile({ selected, selectedList, onSelectList, onBack, onFollow,
 }
 
 export default function ReadersPage({ personId, onOpenPerson, onBack, onBookDetails }) {
+  const { user, requireAuth } = useAuth()
   const [query, setQuery] = useState('')
   const [people, setPeople] = useState([])
   const [following, setFollowing] = useState([])
@@ -93,10 +95,11 @@ export default function ReadersPage({ personId, onOpenPerson, onBack, onBookDeta
   }, [query])
 
   useEffect(() => {
+    if (!user) return
     peopleApi.following()
       .then(data => setFollowing(data.people))
       .catch(err => setError(err.message))
-  }, [])
+  }, [user])
 
   // The open profile comes from the URL (/readers/:id), so back/forward and shared links work.
   useEffect(() => {
@@ -110,6 +113,7 @@ export default function ReadersPage({ personId, onOpenPerson, onBack, onBookDeta
 
   async function toggleFollow() {
     if (!selected) return
+    if (!user) return requireAuth(`Sign in or create an account to follow ${selected.person.name}.`)
     setError('')
     setBusy(true)
     try {

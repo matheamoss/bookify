@@ -33,14 +33,24 @@ export function Sidebar({ page, lists, onNavigate, onSelectList, onCreateList })
   )
 }
 
+import { useAuth } from '../lib/authContext'
+
 export function Topbar({ user, onHome, onProfile }) {
+  const { requireAuth } = useAuth()
   return (
     <header className="topbar">
       <button className="mobile-brand" onClick={onHome}>Bookify</button>
       <span className="eyebrow">YOUR LITERARY UNIVERSE</span>
-      <button className="profile-button" onClick={onProfile} aria-label="Open profile">
-        {user.name.charAt(0).toUpperCase()}
-      </button>
+      {user ? (
+        <button className="profile-button" onClick={onProfile} aria-label="Open profile">
+          {user.name.charAt(0).toUpperCase()}
+        </button>
+      ) : (
+        <div className="guest-actions">
+          <button className="text-button" onClick={() => requireAuth('', 'login')}>Sign in</button>
+          <button className="sign-up-button" onClick={() => requireAuth('', 'register')}>Create account</button>
+        </div>
+      )}
     </header>
   )
 }
