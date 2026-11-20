@@ -22,6 +22,17 @@ services:
       - "${BOOKIFY_BIND:-127.0.0.1}:${BOOKIFY_PORT:-3000}:${BOOKIFY_PORT:-3000}"
     volumes:
       - bookify_data:/data
+    networks:
+      default:
+      cloudflare:
+        aliases:
+          - bookify
 
 volumes:
   bookify_data:
+
+
+networks:
+  cloudflare:
+    external: true
+    name: cloudflare
