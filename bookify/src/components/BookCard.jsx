@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import BookCover from './BookCover'
 
 export default function BookCard({
@@ -5,6 +6,13 @@ export default function BookCard({
 }) {
   const rating = ratings?.[book.id] || 0
   const review = reviews?.[book.id] || ''
+  // Keep the note local while typing and store it when the field loses focus.
+  const [draft, setDraft] = useState(null)
+
+  function commitReview() {
+    if (draft !== null && draft !== review) onReview(book, draft)
+    setDraft(null)
+  }
 
   return (
     <article className="book-card">
@@ -40,8 +48,9 @@ export default function BookCard({
           <label className="book-review-label">
             <span>Your note</span>
             <textarea
-              value={review}
-              onChange={event => onReview(book, event.target.value)}
+              value={draft ?? review}
+              onChange={event => setDraft(event.target.value)}
+              onBlur={commitReview}
               placeholder="Write what you thought..."
               maxLength={500}
               rows={3}
