@@ -3,6 +3,10 @@ import nodemailer from 'nodemailer'
 const publicUrl = (process.env.BOOKIFY_PUBLIC_URL || 'http://localhost:5173').replace(/\/$/, '')
 const from = process.env.SMTP_FROM || process.env.SMTP_USER
 
+// Email verification and password reset stay off until an SMTP server is ready.
+// Set BOOKIFY_EMAIL_ENABLED=true together with the SMTP_* values to turn them on.
+export const emailEnabled = process.env.BOOKIFY_EMAIL_ENABLED === 'true'
+
 let transporter
 
 function mailer() {

@@ -13,6 +13,7 @@ const jsonOptions = (method, body) => ({
 
 export const authApi = {
   me: () => request('/api/me'),
+  config: () => request('/api/config'),
   register: details => request('/api/register', jsonOptions('POST', details)),
   login: details => request('/api/login', jsonOptions('POST', details)),
   logout: () => request('/api/logout', { method: 'POST' }),

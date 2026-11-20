@@ -6,8 +6,7 @@ Bookify runs as one container: the website, account API, and SQLite database. Th
 
 1. Copy this project to your server.
 2. Point your HTTPS reverse proxy at `127.0.0.1:3000`.
-3. Copy `.env.example` to `.env` and enter the Google Workspace SMTP details described below.
-4. Run `make prod` from this directory.
+3. Run `make prod` from this directory.
 
 Useful production commands:
 
@@ -37,13 +36,15 @@ The local development test user is enabled only in development:
 - Email: `test@bookify.local`
 - Password: `Testbruker123!`
 
-Registration uses name, email, and a password of at least 12 characters. Passwords are hashed; session cookies are HTTP-only. New accounts must confirm their email address. Password-reset and confirmation links are single-use and expire after one hour. Existing accounts are treated as already verified during the database migration.
+Registration uses name, email, and a password of at least 12 characters. Passwords are hashed; session cookies are HTTP-only. Email verification and password reset are turned off by default (`BOOKIFY_EMAIL_ENABLED=false`): new accounts are signed in right after registering, and there is no password reset. When enabled, new accounts must confirm their email address, and password-reset and confirmation links are single-use and expire after one hour. Existing accounts are treated as already verified during the database migration.
 
-## Google Workspace email
+## Google Workspace email (optional, currently off)
 
 Create a dedicated sender such as `noreply@mybookify.no` in Google Workspace. Turn on two-step verification for that account, then create an app password specifically for Bookify. Do not use the account's normal password.
 
-Set these values in the server's untracked `.env` file:
+Copy `.env.example` to `.env` and set these values in the server's untracked `.env` file:
+
+- `BOOKIFY_EMAIL_ENABLED=true`
 
 - `BOOKIFY_PUBLIC_URL=https://mybookify.no`
 - `SMTP_HOST=smtp.gmail.com`

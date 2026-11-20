@@ -4,7 +4,7 @@ A book library with playlists, ratings, profiles and reader following.
 
 ## Run with Docker
 
-Use Docker for both development and production workflows. Copy `.env.example` to `.env` and enter the SMTP credentials before starting Bookify.
+Use Docker for both development and production workflows. Email verification and password reset are turned off by default; see [DEPLOYMENT.md](DEPLOYMENT.md) to enable them once an SMTP server is available.
 
 - `make dev` starts the local hot-reload app at `http://127.0.0.1:5173`.
 - `make dev-detach` starts local development in the background.

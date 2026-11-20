@@ -1,9 +1,10 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { db } from './db.js'
 import { send } from './http.js'
-import { sendPasswordResetEmail, sendVerificationEmail } from './email.js'
+import { emailEnabled, sendPasswordResetEmail, sendVerificationEmail } from './email.js'
 import { readJson, currentUser, sameOrigin, limited, passwordHash, makeSession, makeEmailToken, consumeEmailToken, tokenHash, cookie, cookieName } from './auth.js'
 
+const emailRoutes = ['/api/verify-email', '/api/resend-verification', '/api/forgot-password', '/api/reset-password']
 const validEmail = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 
 async function deliver(res, action) {
@@ -41,6 +42,8 @@ function validateLibrary(value) {
 export async function api(req, res, pathname) {
   if (req.method === 'GET' && pathname === '/api/health') return send(res, 200, { ok: true })
   if (!['GET', 'HEAD'].includes(req.method) && !sameOrigin(req)) return send(res, 403, { error: 'Request origin is not allowed.' })
+  if (req.method === 'GET' && pathname === '/api/config') return send(res, 200, { emailEnabled })
+  if (!emailEnabled && emailRoutes.includes(pathname)) return send(res, 404, { error: 'Not found.' })
 
   if (req.method === 'POST' && pathname === '/api/register') {
     const { name, email, password, publicProfile } = await readJson(req)
@@ -56,8 +59,9 @@ export async function api(req, res, pathname) {
     const user = { id: randomBytes(16).toString('hex'), name: cleanName, email: cleanEmail, is_public: publicProfile === false ? 0 : 1 }
     const salt = randomBytes(16).toString('hex')
     const hash = await passwordHash(password, salt)
-    db.prepare('INSERT INTO users (id, name, email, password_hash, salt, created_at, is_public, email_verified_at) VALUES (?, ?, ?, ?, ?, ?, ?, NULL)')
-      .run(user.id, user.name, user.email, hash, salt, Date.now(), user.is_public)
+    db.prepare('INSERT INTO users (id, name, email, password_hash, salt, created_at, is_public, email_verified_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(user.id, user.name, user.email, hash, salt, Date.now(), user.is_public, emailEnabled ? null : Date.now())
+    if (!emailEnabled) return makeSession(res, user)
     const token = makeEmailToken(user.id, 'verify')
     if (!await deliver(res, () => sendVerificationEmail({ to: user.email, name: user.name, token }))) return
     return send(res, 201, { requiresVerification: true, email: user.email })
@@ -93,13 +97,14 @@ export async function api(req, res, pathname) {
       const salt = randomBytes(16).toString('hex')
       const hash = await passwordHash(testUser.password, salt)
       user = { id: randomBytes(16).toString('hex'), name: testUser.name, email: testUser.email, password_hash: hash, salt, is_public: 1 }
-      db.prepare('INSERT INTO users (id, name, email, password_hash, salt, created_at, is_public) VALUES (?, ?, ?, ?, ?, ?, ?)')
-        .run(user.id, user.name, user.email, user.password_hash, user.salt, Date.now(), user.is_public)
+      user.email_verified_at = Date.now()
+      db.prepare('INSERT INTO users (id, name, email, password_hash, salt, created_at, is_public, email_verified_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+        .run(user.id, user.name, user.email, user.password_hash, user.salt, Date.now(), user.is_public, user.email_verified_at)
     }
     const hash = await passwordHash(String(password || ''), user?.salt || 'invalid-user')
     if (!user || !timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(user.password_hash, 'hex')))
       return send(res, 401, { error: 'Incorrect email or password.' })
-    if (!user.email_verified_at) return send(res, 403, { error: 'Confirm your email before signing in.', needsVerification: true })
+    if (emailEnabled && !user.email_verified_at) return send(res, 403, { error: 'Confirm your email before signing in.', needsVerification: true })
     return makeSession(res, user)
   }
 

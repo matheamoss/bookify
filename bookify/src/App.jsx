@@ -6,9 +6,13 @@ import './App.css'
 
 export default function App() {
   const [session, setSession] = useState({ status: 'loading', user: null, library: null })
+  const [emailEnabled, setEmailEnabled] = useState(false)
 
   useEffect(() => {
-    authApi.me()
+    authApi.config()
+      .then(config => setEmailEnabled(Boolean(config.emailEnabled)))
+      .catch(() => {})
+      .then(() => authApi.me())
       .then(async ({ user }) => {
         if (!user) {
           setSession({ status: 'guest', user: null, library: null })
@@ -34,7 +38,7 @@ export default function App() {
   if (session.status === 'error') {
     return <main className="auth-loading">Bookify could not connect. Check that the server is running, then reload the page.</main>
   }
-  if (session.status === 'guest') return <AuthScreen onSignedIn={signedIn} />
+  if (session.status === 'guest') return <AuthScreen onSignedIn={signedIn} emailEnabled={emailEnabled} />
   return <BookifyApp key={session.user.id} user={session.user}
     initialLibrary={session.library} onLogout={logout} />
 }

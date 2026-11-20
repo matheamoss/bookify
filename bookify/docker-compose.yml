@@ -10,6 +10,7 @@ services:
       DB_PATH: /data/bookify.sqlite
       STATIC_ROOT: /app/dist
       COOKIE_SECURE: "true"
+      BOOKIFY_EMAIL_ENABLED: ${BOOKIFY_EMAIL_ENABLED:-false}
       BOOKIFY_PUBLIC_URL: ${BOOKIFY_PUBLIC_URL:-https://mybookify.no}
       SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
       SMTP_PORT: ${SMTP_PORT:-587}

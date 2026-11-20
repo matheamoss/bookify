@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { authApi } from '../lib/api'
 import AboutPage from './AboutPage'
 
@@ -8,15 +8,19 @@ const testCredentials = {
 }
 const showTestUser = import.meta.env.DEV || import.meta.env.VITE_ENABLE_TEST_USER === 'true'
 
-const query = new URLSearchParams(window.location.search)
-const verificationToken = query.get('verify')
-const resetToken = query.get('reset')
+function readActionLink(emailEnabled) {
+  if (!emailEnabled) return {}
+  const query = new URLSearchParams(window.location.search)
+  return { verify: query.get('verify'), reset: query.get('reset') }
+}
 
 function clearActionLink() {
   window.history.replaceState({}, '', window.location.pathname)
 }
 
-export default function AuthScreen({ onSignedIn }) {
+export default function AuthScreen({ onSignedIn, emailEnabled = false }) {
+  const [{ verify: verificationToken, reset: resetToken }] = useState(() => readActionLink(emailEnabled))
+  const verificationStarted = useRef(false)
   const [mode, setMode] = useState(resetToken ? 'reset' : verificationToken ? 'verifying' : 'login')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -28,7 +32,8 @@ export default function AuthScreen({ onSignedIn }) {
   const [showAbout, setShowAbout] = useState(false)
 
   useEffect(() => {
-    if (!verificationToken) return
+    if (!verificationToken || verificationStarted.current) return
+    verificationStarted.current = true
     authApi.verifyEmail(verificationToken)
       .then(({ user }) => {
         clearActionLink()
@@ -39,7 +44,7 @@ export default function AuthScreen({ onSignedIn }) {
         setError(err.message)
         setMode('login')
       })
-  }, [onSignedIn])
+  }, [onSignedIn, verificationToken])
 
   async function submit(event) {
     event.preventDefault()
@@ -48,8 +53,9 @@ export default function AuthScreen({ onSignedIn }) {
     setBusy(true)
     try {
       if (mode === 'register') {
-        await authApi.register({ name, email, password, publicProfile })
-        setMode('verify-pending')
+        const result = await authApi.register({ name, email, password, publicProfile })
+        if (result.requiresVerification) setMode('verify-pending')
+        else await onSignedIn(result.user)
       } else if (mode === 'forgot') {
         await authApi.forgotPassword(email)
         setMessage('If an account exists for that address, a reset link is on its way.')
@@ -179,7 +185,7 @@ export default function AuthScreen({ onSignedIn }) {
           </form>
         )}
 
-        {mode === 'login' && <button className="auth-secondary" onClick={() => switchMode('forgot')}>Forgot your password?</button>}
+        {emailEnabled && mode === 'login' && <button className="auth-secondary" onClick={() => switchMode('forgot')}>Forgot your password?</button>}
         {showTestUser && mode === 'login' && (
           <button className="test-login-button" type="button" onClick={useTestUser}>
             Use test user
