@@ -6,7 +6,8 @@ Bookify runs as one container: the website, account API, and SQLite database. Th
 
 1. Copy this project to your server.
 2. Point your HTTPS reverse proxy at `127.0.0.1:3000`.
-3. Run `make prod` from this directory.
+3. Copy `.env.example` to `.env` and enter the Google Workspace SMTP details described below.
+4. Run `make prod` from this directory.
 
 Useful production commands:
 
@@ -36,6 +37,22 @@ The local development test user is enabled only in development:
 - Email: `test@bookify.local`
 - Password: `Testbruker123!`
 
-Registration uses name, email, and a password of at least 12 characters. Passwords are hashed; session cookies are HTTP-only. This version has no email verification or password reset, so add those before opening registration to a large public audience.
+Registration uses name, email, and a password of at least 12 characters. Passwords are hashed; session cookies are HTTP-only. New accounts must confirm their email address. Password-reset and confirmation links are single-use and expire after one hour. Existing accounts are treated as already verified during the database migration.
+
+## Google Workspace email
+
+Create a dedicated sender such as `noreply@mybookify.no` in Google Workspace. Turn on two-step verification for that account, then create an app password specifically for Bookify. Do not use the account's normal password.
+
+Set these values in the server's untracked `.env` file:
+
+- `BOOKIFY_PUBLIC_URL=https://mybookify.no`
+- `SMTP_HOST=smtp.gmail.com`
+- `SMTP_PORT=587`
+- `SMTP_SECURE=false`
+- `SMTP_USER=noreply@mybookify.no`
+- `SMTP_PASS=` followed by the Google app password
+- `SMTP_FROM=Bookify <noreply@mybookify.no>`
+
+The `.env` file is ignored by Git. Restart the container after changing it. Configure SPF, DKIM, and DMARC for `mybookify.no` in Cloudflare before inviting users, then register a test account and confirm that both the confirmation and password-reset messages arrive.
 
 Readers can search public profiles, follow each other, and view public playlists, saved books, and ratings. Email addresses remain private. Existing accounts are private after the database migration; their owners can make them public on the Profile page. New readers choose profile visibility when registering and can change it later.

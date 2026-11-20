@@ -1,7 +1,21 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { db } from './db.js'
 import { send } from './http.js'
-import { readJson, currentUser, sameOrigin, limited, passwordHash, makeSession, tokenHash, cookie, cookieName } from './auth.js'
+import { sendPasswordResetEmail, sendVerificationEmail } from './email.js'
+import { readJson, currentUser, sameOrigin, limited, passwordHash, makeSession, makeEmailToken, consumeEmailToken, tokenHash, cookie, cookieName } from './auth.js'
+
+const validEmail = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+
+async function deliver(res, action) {
+  try {
+    await action()
+    return true
+  } catch (error) {
+    console.error('Email delivery failed:', error.message)
+    send(res, 503, { error: 'We could not send the email. Please try again shortly.' })
+    return false
+  }
+}
 
 const testUser = {
   name: 'Bookify Tester',
@@ -32,7 +46,7 @@ export async function api(req, res, pathname) {
     const { name, email, password, publicProfile } = await readJson(req)
     const cleanName = String(name || '').trim()
     const cleanEmail = String(email || '').trim().toLowerCase()
-    if (cleanName.length < 2 || cleanName.length > 80 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail) ||
+    if (cleanName.length < 2 || cleanName.length > 80 || !validEmail(cleanEmail) ||
       typeof password !== 'string' || password.length < 12 || password.length > 200 ||
       (publicProfile !== undefined && typeof publicProfile !== 'boolean')) {
       return send(res, 400, { error: 'Enter a name, valid email and password of at least 12 characters.' })
@@ -42,9 +56,32 @@ export async function api(req, res, pathname) {
     const user = { id: randomBytes(16).toString('hex'), name: cleanName, email: cleanEmail, is_public: publicProfile === false ? 0 : 1 }
     const salt = randomBytes(16).toString('hex')
     const hash = await passwordHash(password, salt)
-    db.prepare('INSERT INTO users (id, name, email, password_hash, salt, created_at, is_public) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    db.prepare('INSERT INTO users (id, name, email, password_hash, salt, created_at, is_public, email_verified_at) VALUES (?, ?, ?, ?, ?, ?, ?, NULL)')
       .run(user.id, user.name, user.email, hash, salt, Date.now(), user.is_public)
-    return makeSession(res, user)
+    const token = makeEmailToken(user.id, 'verify')
+    if (!await deliver(res, () => sendVerificationEmail({ to: user.email, name: user.name, token }))) return
+    return send(res, 201, { requiresVerification: true, email: user.email })
+  }
+
+  if (req.method === 'POST' && pathname === '/api/verify-email') {
+    const { token } = await readJson(req)
+    const user = consumeEmailToken(token, 'verify')
+    if (!user) return send(res, 400, { error: 'This confirmation link is invalid or has expired.' })
+    db.prepare('UPDATE users SET email_verified_at = ? WHERE id = ?').run(Date.now(), user.user_id)
+    return makeSession(res, { id: user.user_id, name: user.name, email: user.email, is_public: user.is_public })
+  }
+
+  if (req.method === 'POST' && pathname === '/api/resend-verification') {
+    const { email } = await readJson(req)
+    const cleanEmail = String(email || '').trim().toLowerCase()
+    if (!validEmail(cleanEmail)) return send(res, 400, { error: 'Enter a valid email address.' })
+    if (limited(req, `verify:${cleanEmail}`)) return send(res, 429, { error: 'Too many attempts. Try again later.' })
+    const user = db.prepare('SELECT id, name, email, email_verified_at FROM users WHERE email = ?').get(cleanEmail)
+    if (user && !user.email_verified_at) {
+      const token = makeEmailToken(user.id, 'verify')
+      if (!await deliver(res, () => sendVerificationEmail({ to: user.email, name: user.name, token }))) return
+    }
+    return send(res, 200, { ok: true })
   }
 
   if (req.method === 'POST' && pathname === '/api/login') {
@@ -62,7 +99,35 @@ export async function api(req, res, pathname) {
     const hash = await passwordHash(String(password || ''), user?.salt || 'invalid-user')
     if (!user || !timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(user.password_hash, 'hex')))
       return send(res, 401, { error: 'Incorrect email or password.' })
+    if (!user.email_verified_at) return send(res, 403, { error: 'Confirm your email before signing in.', needsVerification: true })
     return makeSession(res, user)
+  }
+
+  if (req.method === 'POST' && pathname === '/api/forgot-password') {
+    const { email } = await readJson(req)
+    const cleanEmail = String(email || '').trim().toLowerCase()
+    if (!validEmail(cleanEmail)) return send(res, 400, { error: 'Enter a valid email address.' })
+    if (limited(req, `reset:${cleanEmail}`)) return send(res, 429, { error: 'Too many attempts. Try again later.' })
+    const user = db.prepare('SELECT id, name, email FROM users WHERE email = ?').get(cleanEmail)
+    if (user) {
+      const token = makeEmailToken(user.id, 'reset')
+      if (!await deliver(res, () => sendPasswordResetEmail({ to: user.email, name: user.name, token }))) return
+    }
+    return send(res, 200, { ok: true })
+  }
+
+  if (req.method === 'POST' && pathname === '/api/reset-password') {
+    const { token, password } = await readJson(req)
+    if (typeof password !== 'string' || password.length < 12 || password.length > 200)
+      return send(res, 400, { error: 'Use a password of at least 12 characters.' })
+    const user = consumeEmailToken(token, 'reset')
+    if (!user) return send(res, 400, { error: 'This reset link is invalid or has expired.' })
+    const salt = randomBytes(16).toString('hex')
+    const hash = await passwordHash(password, salt)
+    db.prepare('UPDATE users SET password_hash = ?, salt = ?, email_verified_at = COALESCE(email_verified_at, ?) WHERE id = ?')
+      .run(hash, salt, Date.now(), user.user_id)
+    db.prepare('DELETE FROM sessions WHERE user_id = ?').run(user.user_id)
+    return makeSession(res, { id: user.user_id, name: user.name, email: user.email, is_public: user.is_public })
   }
 
   if (req.method === 'POST' && pathname === '/api/logout') {

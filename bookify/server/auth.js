@@ -66,3 +66,23 @@ export function makeSession(res, user) {
     .run(tokenHash(token), user.id, Date.now() + sessionAge)
   send(res, 200, { user: { id: user.id, name: user.name, email: user.email, is_public: user.is_public } }, { 'set-cookie': cookie(token, sessionAge / 1000) })
 }
+
+export function makeEmailToken(userId, purpose) {
+  const token = randomBytes(32).toString('hex')
+  db.prepare('DELETE FROM email_tokens WHERE user_id = ? AND purpose = ?').run(userId, purpose)
+  db.prepare('INSERT INTO email_tokens (token_hash, user_id, purpose, expires_at, created_at) VALUES (?, ?, ?, ?, ?)')
+    .run(tokenHash(token), userId, purpose, Date.now() + 60 * 60_000, Date.now())
+  return token
+}
+
+export function consumeEmailToken(token, purpose) {
+  if (!/^[a-f0-9]{64}$/.test(String(token || ''))) return null
+  const row = db.prepare(`
+    SELECT email_tokens.token_hash, email_tokens.user_id, users.name, users.email, users.is_public
+    FROM email_tokens JOIN users ON users.id = email_tokens.user_id
+    WHERE email_tokens.token_hash = ? AND email_tokens.purpose = ? AND email_tokens.expires_at > ?
+  `).get(tokenHash(token), purpose, Date.now())
+  if (!row) return null
+  db.prepare('DELETE FROM email_tokens WHERE token_hash = ?').run(row.token_hash)
+  return row
+}
