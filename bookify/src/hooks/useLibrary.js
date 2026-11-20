@@ -29,16 +29,27 @@ export function useLibrary(initialLibrary, initialVersion = null) {
     return () => clearTimeout(timer)
   }, [catalog, lists, ratings, reviews, ranking, saveNow])
 
+  // Look up covers for starter books once. Books marked coverChecked are not looked up again.
   useEffect(() => {
-    const missing = starterBooks.filter(book => !initialLibrary?.catalog?.find(item => item.id === book.id)?.coverId)
+    const startingCatalog = initialLibrary?.catalog || starterBooks
+    const missing = starterBooks.filter(book => {
+      const saved = startingCatalog.find(item => item.id === book.id)
+      return saved && !saved.coverId && !saved.coverChecked
+    })
     if (!missing.length) return
     const controller = new AbortController()
-    Promise.all(missing.map(book => findStarterCover(book, controller.signal)))
-      .then(covers => setCatalog(current => current.map(book => {
-        const cover = covers.find(item => item?.id === book.id)
-        return cover ? { ...book, coverId: cover.coverId, workKey: cover.workKey } : book
-      })))
-      .catch(() => {})
+    Promise.allSettled(missing.map(book => findStarterCover(book, controller.signal)))
+      .then(results => {
+        if (controller.signal.aborted) return
+        setCatalog(current => current.map(book => {
+          const index = missing.findIndex(item => item.id === book.id)
+          if (index < 0 || results[index].status !== 'fulfilled') return book
+          const cover = results[index].value
+          return cover
+            ? { ...book, coverId: cover.coverId, workKey: cover.workKey, coverChecked: true }
+            : { ...book, coverChecked: true }
+        }))
+      })
     return () => controller.abort()
   }, [initialLibrary])
 
