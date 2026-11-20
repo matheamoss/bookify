@@ -1,7 +1,7 @@
 services:
   bookify:
     build: .
-    image: bookify:prod
+    image: ${BOOKIFY_IMAGE:-ghcr.io/matheamoss/bookify:latest}
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -10,6 +10,14 @@ services:
       DB_PATH: /data/bookify.sqlite
       STATIC_ROOT: /app/dist
       COOKIE_SECURE: "true"
+      BOOKIFY_EMAIL_ENABLED: ${BOOKIFY_EMAIL_ENABLED:-false}
+      BOOKIFY_PUBLIC_URL: ${BOOKIFY_PUBLIC_URL:-https://mybookify.no}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
     ports:
       - "${BOOKIFY_BIND:-127.0.0.1}:${BOOKIFY_PORT:-3000}:${BOOKIFY_PORT:-3000}"
     volumes:

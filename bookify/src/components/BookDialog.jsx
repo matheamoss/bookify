@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { bookWorkKey } from '../lib/books'
 import BookCover from './BookCover'
 
 export default function BookDialog({ book, description, onClose }) {
@@ -10,7 +11,7 @@ export default function BookDialog({ book, description, onClose }) {
   }, [book, onClose])
 
   if (!book) return null
-  const workKey = book.workKey || (typeof book.id === 'string' && book.id.startsWith('/works/') ? book.id : null)
+  const workKey = bookWorkKey(book)
 
   return (
     <div className="book-dialog-backdrop" onClick={onClose}>

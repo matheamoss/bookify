@@ -8,6 +8,7 @@ services:
       DB_PATH: /data/bookify.sqlite
       COOKIE_SECURE: "false"
       BOOKIFY_ENABLE_TEST_USER: "true"
+      BOOKIFY_ALLOWED_ORIGIN: http://localhost:${BOOKIFY_DEV_PORT:-5173},http://127.0.0.1:${BOOKIFY_DEV_PORT:-5173}
     ports:
       - "${BOOKIFY_DEV_BIND:-127.0.0.1}:${BOOKIFY_DEV_PORT:-5173}:5173"
     volumes:

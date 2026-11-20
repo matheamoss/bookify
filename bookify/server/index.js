@@ -1,9 +1,13 @@
 import http from 'node:http'
 import { api } from './api.js'
+import { pruneExpired } from './auth.js'
 import { send, staticFile } from './http.js'
 
 const port = Number(process.env.BOOKIFY_PORT || process.env.PORT || 3001)
 const bind = process.env.BOOKIFY_LISTEN_HOST || '127.0.0.1'
+
+pruneExpired()
+setInterval(pruneExpired, 60 * 60_000).unref()
 
 http.createServer(async (req, res) => {
   try {

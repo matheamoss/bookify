@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 DEV_COMPOSE = $(COMPOSE) -f docker-compose.dev.yml
 PROD_COMPOSE = $(COMPOSE) -f docker-compose.yml
 
-.PHONY: help dev dev-detach dev-build dev-down dev-logs dev-shell prod prod-build prod-down prod-logs ps lint build clean-dev-data
+.PHONY: help dev dev-detach dev-build dev-down dev-logs dev-shell prod prod-pull prod-build prod-down prod-logs ps lint build clean-dev-data
 
 help:
 	@printf "\nBookify Docker commands\n"
@@ -13,6 +13,7 @@ help:
 	@printf "  make dev-logs     Follow local Docker dev logs\n"
 	@printf "  make dev-shell    Open a shell in the dev container\n"
 	@printf "  make prod         Build and start production container in the background\n"
+	@printf "  make prod-pull    Pull the image built by GitHub Actions and start it\n"
 	@printf "  make prod-build   Build production image\n"
 	@printf "  make prod-down    Stop production container\n"
 	@printf "  make prod-logs    Follow production logs\n"
@@ -40,6 +41,10 @@ dev-shell:
 
 prod:
 	$(PROD_COMPOSE) up -d --build
+
+prod-pull:
+	$(PROD_COMPOSE) pull bookify
+	$(PROD_COMPOSE) up -d --no-build
 
 prod-build:
 	$(PROD_COMPOSE) build

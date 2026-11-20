@@ -45,9 +45,17 @@ export async function findStarterCover(book, signal) {
   return { id: book.id, coverId: doc.cover_i, workKey }
 }
 
+// Book data can come from other readers' profiles, so only trust values with the expected shape.
+export const starCount = value => Number.isInteger(value) && value >= 1 && value <= 5 ? value : 0
+export const coverColor = book => /^#[0-9a-f]{3,8}$/i.test(book.color || '') ? book.color : '#455d50'
+export function bookWorkKey(book) {
+  const key = book.workKey || (typeof book.id === 'string' ? book.id : null)
+  return /^\/works\/OL\d+W$/.test(key || '') ? key : null
+}
+
 export async function getBookDescription(book, signal) {
-  const workKey = book.workKey || (typeof book.id === 'string' ? book.id : null)
-  if (!workKey?.startsWith('/works/')) return 'No description is available for this edition.'
+  const workKey = bookWorkKey(book)
+  if (!workKey) return 'No description is available for this edition.'
   const response = await fetch(`https://openlibrary.org${workKey}.json`, { signal })
   if (!response.ok) throw new Error('Description failed')
   const data = await response.json()

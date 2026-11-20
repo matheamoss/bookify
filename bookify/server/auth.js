@@ -36,16 +36,24 @@ export function currentUser(req) {
 export function sameOrigin(req) {
   const origin = req.headers.origin
   if (!origin) return true
-  const allowedOrigins = (process.env.BOOKIFY_ALLOWED_ORIGIN || '')
+  // BOOKIFY_PUBLIC_URL is allowed too, so requests keep working behind a proxy that rewrites the Host header.
+  const allowedOrigins = [process.env.BOOKIFY_ALLOWED_ORIGIN || '', process.env.BOOKIFY_PUBLIC_URL || '']
+    .join(',')
     .split(',')
-    .map(item => item.trim())
+    .map(item => item.trim().replace(/\/$/, ''))
     .filter(Boolean)
   if (allowedOrigins.includes(origin)) return true
   try { return new URL(origin).host === req.headers.host } catch { return false }
 }
 
+const limitKey = (req, email) => `${req.socket.remoteAddress}:${email}`
+
+export function clearLimit(req, email) {
+  attempts.delete(limitKey(req, email))
+}
+
 export function limited(req, email) {
-  const key = `${req.socket.remoteAddress}:${email}`
+  const key = limitKey(req, email)
   const now = Date.now()
   const entry = attempts.get(key)
   if (!entry || entry.until < now) {
@@ -54,6 +62,13 @@ export function limited(req, email) {
   }
   entry.count += 1
   return entry.count > 8
+}
+
+export function pruneExpired() {
+  const now = Date.now()
+  db.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(now)
+  db.prepare('DELETE FROM email_tokens WHERE expires_at <= ?').run(now)
+  for (const [key, entry] of attempts) if (entry.until < now) attempts.delete(key)
 }
 
 export async function passwordHash(password, salt) {
@@ -65,4 +80,24 @@ export function makeSession(res, user) {
   db.prepare('INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)')
     .run(tokenHash(token), user.id, Date.now() + sessionAge)
   send(res, 200, { user: { id: user.id, name: user.name, email: user.email, is_public: user.is_public } }, { 'set-cookie': cookie(token, sessionAge / 1000) })
+}
+
+export function makeEmailToken(userId, purpose) {
+  const token = randomBytes(32).toString('hex')
+  db.prepare('DELETE FROM email_tokens WHERE user_id = ? AND purpose = ?').run(userId, purpose)
+  db.prepare('INSERT INTO email_tokens (token_hash, user_id, purpose, expires_at, created_at) VALUES (?, ?, ?, ?, ?)')
+    .run(tokenHash(token), userId, purpose, Date.now() + 60 * 60_000, Date.now())
+  return token
+}
+
+export function consumeEmailToken(token, purpose) {
+  if (!/^[a-f0-9]{64}$/.test(String(token || ''))) return null
+  const row = db.prepare(`
+    SELECT email_tokens.token_hash, email_tokens.user_id, users.name, users.email, users.is_public
+    FROM email_tokens JOIN users ON users.id = email_tokens.user_id
+    WHERE email_tokens.token_hash = ? AND email_tokens.purpose = ? AND email_tokens.expires_at > ?
+  `).get(tokenHash(token), purpose, Date.now())
+  if (!row) return null
+  db.prepare('DELETE FROM email_tokens WHERE token_hash = ?').run(row.token_hash)
+  return row
 }

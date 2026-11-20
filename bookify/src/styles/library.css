@@ -132,11 +132,3 @@
   color: var(--brown);
   font-size: 12px;
 }
-
-.verification-note {
-  display: block;
-  color: var(--brown);
-  font-size: 12px;
-  margin-top: 8px;
-  max-width: 520px;
-}

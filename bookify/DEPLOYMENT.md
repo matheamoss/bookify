@@ -10,7 +10,8 @@ Bookify runs as one container: the website, account API, and SQLite database. Th
 
 Useful production commands:
 
-- `make prod` builds and starts the production container in the background.
+- `make prod` builds the image on the server and starts the production container in the background.
+- `make prod-pull` pulls the image that GitHub Actions publishes to `ghcr.io/matheamoss/bookify:latest` on every push to `main`, then starts it without building. If the package is private, run `docker login ghcr.io` on the server first with a token that has `read:packages`. Set `BOOKIFY_IMAGE` to use another tag, for example a commit SHA.
 - `make prod-build` builds the production image.
 - `make prod-down` stops the production container.
 - `make prod-logs` follows logs from the production container.
@@ -36,6 +37,24 @@ The local development test user is enabled only in development:
 - Email: `test@bookify.local`
 - Password: `Testbruker123!`
 
-Registration uses name, email, and a password of at least 12 characters. Passwords are hashed; session cookies are HTTP-only. This version has no email verification or password reset, so add those before opening registration to a large public audience.
+Registration uses name, email, and a password of at least 12 characters. Passwords are hashed; session cookies are HTTP-only. Email verification and password reset are turned off by default (`BOOKIFY_EMAIL_ENABLED=false`): new accounts are signed in right after registering, and there is no password reset by email. Signed-in readers can still change their password and delete their account on the Profile page. When enabled, new accounts must confirm their email address, and password-reset and confirmation links are single-use and expire after one hour. Existing accounts are treated as already verified during the database migration.
+
+## Google Workspace email (optional, currently off)
+
+Create a dedicated sender such as `noreply@mybookify.no` in Google Workspace. Turn on two-step verification for that account, then create an app password specifically for Bookify. Do not use the account's normal password.
+
+Copy `.env.example` to `.env` and set these values in the server's untracked `.env` file:
+
+- `BOOKIFY_EMAIL_ENABLED=true`
+
+- `BOOKIFY_PUBLIC_URL=https://mybookify.no`
+- `SMTP_HOST=smtp.gmail.com`
+- `SMTP_PORT=587`
+- `SMTP_SECURE=false`
+- `SMTP_USER=noreply@mybookify.no`
+- `SMTP_PASS=` followed by the Google app password
+- `SMTP_FROM=Bookify <noreply@mybookify.no>`
+
+The `.env` file is ignored by Git. Restart the container after changing it. Configure SPF, DKIM, and DMARC for `mybookify.no` in Cloudflare before inviting users, then register a test account and confirm that both the confirmation and password-reset messages arrive.
 
 Readers can search public profiles, follow each other, and view public playlists, saved books, and ratings. Email addresses remain private. Existing accounts are private after the database migration; their owners can make them public on the Profile page. New readers choose profile visibility when registering and can change it later.

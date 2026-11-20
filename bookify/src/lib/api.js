@@ -1,7 +1,12 @@
 async function request(path, options = {}) {
   const response = await fetch(path, options)
-  const data = await response.json()
-  if (!response.ok) throw new Error(data.error || 'Something went wrong.')
+  const data = await response.json().catch(() => ({}))
+  if (!response.ok) {
+    const error = new Error(data.error || 'Something went wrong.')
+    error.status = response.status
+    error.data = data
+    throw error
+  }
   return data
 }
 
@@ -13,9 +18,16 @@ const jsonOptions = (method, body) => ({
 
 export const authApi = {
   me: () => request('/api/me'),
+  config: () => request('/api/config'),
   register: details => request('/api/register', jsonOptions('POST', details)),
   login: details => request('/api/login', jsonOptions('POST', details)),
   logout: () => request('/api/logout', { method: 'POST' }),
+  changePassword: (currentPassword, newPassword) => request('/api/password', jsonOptions('PUT', { currentPassword, newPassword })),
+  deleteAccount: password => request('/api/account', jsonOptions('DELETE', { password })),
+  verifyEmail: token => request('/api/verify-email', jsonOptions('POST', { token })),
+  resendVerification: email => request('/api/resend-verification', jsonOptions('POST', { email })),
+  forgotPassword: email => request('/api/forgot-password', jsonOptions('POST', { email })),
+  resetPassword: (token, password) => request('/api/reset-password', jsonOptions('POST', { token, password })),
 }
 
 export const libraryApi = {

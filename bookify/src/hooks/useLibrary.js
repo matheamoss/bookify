@@ -3,7 +3,7 @@ import { libraryApi } from '../lib/api'
 import { emptyLists, findStarterCover, starterBooks } from '../lib/books'
 import { readLocal } from '../lib/localLibrary'
 
-export function useLibrary(initialLibrary) {
+export function useLibrary(initialLibrary, initialVersion = null) {
   const [catalog, setCatalog] = useState(initialLibrary?.catalog || starterBooks)
   const [lists, setLists] = useState(initialLibrary?.lists || emptyLists)
   const [ratings, setRatings] = useState(initialLibrary?.ratings || {})
@@ -11,12 +11,13 @@ export function useLibrary(initialLibrary) {
   const [ranking, setRanking] = useState(initialLibrary?.ranking || [])
   const [saveError, setSaveError] = useState('')
   const saveQueue = useRef(Promise.resolve())
+  const version = useRef(initialVersion)
 
   const saveNow = useCallback(library => {
     saveQueue.current = saveQueue.current
       .catch(() => {})
-      .then(() => libraryApi.save(library))
-      .then(() => setSaveError(''))
+      .then(() => libraryApi.save({ ...library, baseVersion: version.current }))
+      .then(result => { version.current = result.version; setSaveError('') })
       .catch(error => { setSaveError(error.message); throw error })
     return saveQueue.current
   }, [])
@@ -28,16 +29,27 @@ export function useLibrary(initialLibrary) {
     return () => clearTimeout(timer)
   }, [catalog, lists, ratings, reviews, ranking, saveNow])
 
+  // Look up covers for starter books once. Books marked coverChecked are not looked up again.
   useEffect(() => {
-    const missing = starterBooks.filter(book => !initialLibrary?.catalog?.find(item => item.id === book.id)?.coverId)
+    const startingCatalog = initialLibrary?.catalog || starterBooks
+    const missing = starterBooks.filter(book => {
+      const saved = startingCatalog.find(item => item.id === book.id)
+      return saved && !saved.coverId && !saved.coverChecked
+    })
     if (!missing.length) return
     const controller = new AbortController()
-    Promise.all(missing.map(book => findStarterCover(book, controller.signal)))
-      .then(covers => setCatalog(current => current.map(book => {
-        const cover = covers.find(item => item?.id === book.id)
-        return cover ? { ...book, coverId: cover.coverId, workKey: cover.workKey } : book
-      })))
-      .catch(() => {})
+    Promise.allSettled(missing.map(book => findStarterCover(book, controller.signal)))
+      .then(results => {
+        if (controller.signal.aborted) return
+        setCatalog(current => current.map(book => {
+          const index = missing.findIndex(item => item.id === book.id)
+          if (index < 0 || results[index].status !== 'fulfilled') return book
+          const cover = results[index].value
+          return cover
+            ? { ...book, coverId: cover.coverId, workKey: cover.workKey, coverChecked: true }
+            : { ...book, coverChecked: true }
+        }))
+      })
     return () => controller.abort()
   }, [initialLibrary])
 
@@ -87,6 +99,10 @@ export function useLibrary(initialLibrary) {
     })
   }
 
+  function addRankedBook(bookId) {
+    setRanking(current => current.some(id => String(id) === String(bookId)) ? current : [...current, bookId])
+  }
+
   function removeRankedBook(bookId) {
     setRanking(current => current.filter(id => String(id) !== String(bookId)))
   }
@@ -104,7 +120,7 @@ export function useLibrary(initialLibrary) {
 
   return {
     catalog, lists, ratings, reviews, ranking, saveError, setSaveError,
-    createList, addBook, removeBook, rateBook, reviewBook, moveRankedBook, removeRankedBook,
+    createList, addBook, removeBook, rateBook, reviewBook, moveRankedBook, addRankedBook, removeRankedBook,
     importFromDevice, saveNow,
   }
 }

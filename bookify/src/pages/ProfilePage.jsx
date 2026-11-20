@@ -1,9 +1,10 @@
+import AccountSettings from '../components/AccountSettings'
 import PlaylistCard from '../components/PlaylistCard'
 import { hasLocalLibrary } from '../lib/localLibrary'
 
 export default function ProfilePage({
   user, lists, ratings, isPublic, visibilityBusy, saveError,
-  onToggleVisibility, onSelectList, onSelectLibraryView, onImport, onSignOut,
+  onToggleVisibility, onSelectList, onSelectLibraryView, onImport, onSignOut, onAccountDeleted,
 }) {
   const savedBookCount = new Set(lists.flatMap(list => list.books.map(String))).size
 
@@ -15,7 +16,6 @@ export default function ProfilePage({
         <div>
           <h1 className="page-title" id="profile-heading">{user.name}</h1>
           <p>{user.email}</p>
-          <span className="verification-note">Email saved for this account. Mail verification can be enabled when an email provider is connected.</span>
         </div>
       </header>
       <p className="intro">A little corner of the internet for all your favorite stories.</p>
@@ -52,6 +52,7 @@ export default function ProfilePage({
         <button onClick={onSignOut}>Sign out</button>
       </div>
       {saveError && <p className="auth-error" role="alert">{saveError}</p>}
+      <AccountSettings onAccountDeleted={onAccountDeleted} />
     </section>
   )
 }
