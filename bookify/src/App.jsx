@@ -18,15 +18,15 @@ export default function App() {
           setSession({ status: 'guest', user: null, library: null })
           return
         }
-        const { library } = await libraryApi.get()
-        setSession({ status: 'ready', user, library })
+        const { library, version } = await libraryApi.get()
+        setSession({ status: 'ready', user, library, version })
       })
       .catch(() => setSession({ status: 'error', user: null, library: null }))
   }, [])
 
   async function signedIn(user) {
-    const { library } = await libraryApi.get()
-    setSession({ status: 'ready', user, library })
+    const { library, version } = await libraryApi.get()
+    setSession({ status: 'ready', user, library, version })
   }
 
   async function logout() {
@@ -40,5 +40,5 @@ export default function App() {
   }
   if (session.status === 'guest') return <AuthScreen onSignedIn={signedIn} emailEnabled={emailEnabled} />
   return <BookifyApp key={session.user.id} user={session.user}
-    initialLibrary={session.library} onLogout={logout} />
+    initialLibrary={session.library} initialVersion={session.version} onLogout={logout} />
 }

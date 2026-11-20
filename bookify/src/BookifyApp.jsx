@@ -13,14 +13,14 @@ import ProfilePage from './pages/ProfilePage'
 import RankingsPage from './pages/RankingsPage'
 import ReadersPage from './pages/ReadersPage'
 
-export default function BookifyApp({ user, initialLibrary, onLogout }) {
+export default function BookifyApp({ user, initialLibrary, initialVersion, onLogout }) {
   const [page, setPage] = useState('Home')
   const [selectedList, setSelectedList] = useState(null)
   const [isPublic, setIsPublic] = useState(Boolean(user.is_public))
   const [visibilityBusy, setVisibilityBusy] = useState(false)
   const historyReady = useRef(false)
 
-  const library = useLibrary(initialLibrary)
+  const library = useLibrary(initialLibrary, initialVersion)
   const search = useBookSearch()
   const details = useBookDetails()
   const { catalog, lists, ratings, reviews, ranking, saveError, setSaveError } = library
@@ -74,10 +74,14 @@ export default function BookifyApp({ user, initialLibrary, onLogout }) {
   async function signOut() {
     try {
       await library.saveNow({ catalog, lists, ratings, reviews, ranking })
-      await onLogout()
-    } catch {
-      setSaveError('Your library could not be saved. Please try again before signing out.')
+    } catch (error) {
+      // On a conflict the server already holds a newer library, so signing out loses nothing that was saved.
+      if (error.status !== 409) {
+        setSaveError('Your library could not be saved. Please try again before signing out.')
+        return
+      }
     }
+    await onLogout()
   }
 
   async function toggleVisibility() {
@@ -107,6 +111,12 @@ export default function BookifyApp({ user, initialLibrary, onLogout }) {
         onSelectList={selectList} onCreateList={library.createList} />
       <main className="main">
         <Topbar user={user} onHome={() => navigate('Home')} onProfile={() => navigate('Profile')} />
+        {saveError && page !== 'Profile' && (
+          <div className="save-banner" role="alert">
+            <span>{saveError}</span>
+            <button onClick={() => window.location.reload()}>Reload</button>
+          </div>
+        )}
         {page === 'Home' && (
           <HomePage {...bookActions} onNavigate={navigate} onSelectList={selectList}
             onCreateList={library.createList} />

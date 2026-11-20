@@ -3,7 +3,7 @@ import { libraryApi } from '../lib/api'
 import { emptyLists, findStarterCover, starterBooks } from '../lib/books'
 import { readLocal } from '../lib/localLibrary'
 
-export function useLibrary(initialLibrary) {
+export function useLibrary(initialLibrary, initialVersion = null) {
   const [catalog, setCatalog] = useState(initialLibrary?.catalog || starterBooks)
   const [lists, setLists] = useState(initialLibrary?.lists || emptyLists)
   const [ratings, setRatings] = useState(initialLibrary?.ratings || {})
@@ -11,12 +11,13 @@ export function useLibrary(initialLibrary) {
   const [ranking, setRanking] = useState(initialLibrary?.ranking || [])
   const [saveError, setSaveError] = useState('')
   const saveQueue = useRef(Promise.resolve())
+  const version = useRef(initialVersion)
 
   const saveNow = useCallback(library => {
     saveQueue.current = saveQueue.current
       .catch(() => {})
-      .then(() => libraryApi.save(library))
-      .then(() => setSaveError(''))
+      .then(() => libraryApi.save({ ...library, baseVersion: version.current }))
+      .then(result => { version.current = result.version; setSaveError('') })
       .catch(error => { setSaveError(error.message); throw error })
     return saveQueue.current
   }, [])

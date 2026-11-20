@@ -205,12 +205,20 @@ export async function api(req, res, pathname) {
   }
 
   if (req.method === 'GET' && pathname === '/api/library') {
-    const row = db.prepare('SELECT payload FROM libraries WHERE user_id = ?').get(user.id)
-    return send(res, 200, { library: row ? JSON.parse(row.payload) : null })
+    const row = db.prepare('SELECT payload, updated_at FROM libraries WHERE user_id = ?').get(user.id)
+    return send(res, 200, { library: row ? JSON.parse(row.payload) : null, version: row?.updated_at ?? null })
   }
   if (req.method === 'PUT' && pathname === '/api/library') {
     const library = await readJson(req)
     if (!validateLibrary(library)) return send(res, 400, { error: 'Invalid library data.' })
+    if (library.baseVersion !== undefined && library.baseVersion !== null && typeof library.baseVersion !== 'number')
+      return send(res, 400, { error: 'Invalid library data.' })
+    const current = db.prepare('SELECT updated_at FROM libraries WHERE user_id = ?').get(user.id)?.updated_at ?? null
+    // Clients send the version they last loaded or saved; a mismatch means another tab or device saved in between.
+    if (library.baseVersion !== undefined && library.baseVersion !== current) {
+      return send(res, 409, { error: 'Your library was changed in another tab or on another device. Reload the page to get the latest version.', version: current })
+    }
+    const version = Math.max(Date.now(), (current ?? 0) + 1)
     db.prepare(`
       INSERT INTO libraries (user_id, payload, updated_at) VALUES (?, ?, ?)
       ON CONFLICT(user_id) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at
@@ -220,8 +228,8 @@ export async function api(req, res, pathname) {
       reviews: library.reviews || {},
       catalog: library.catalog,
       ranking: library.ranking || [],
-    }), Date.now())
-    return send(res, 200, { ok: true })
+    }), version)
+    return send(res, 200, { ok: true, version })
   }
   return send(res, 404, { error: 'Not found.' })
 }
