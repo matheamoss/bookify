@@ -69,7 +69,7 @@ export default function AuthScreen({ onSignedIn, emailEnabled = false }) {
       }
     } catch (err) {
       setError(err.message)
-      if (mode === 'login' && err.message.includes('Confirm your email')) setMode('verify-pending')
+      if (mode === 'login' && err.data?.needsVerification) setMode('verify-pending')
     } finally {
       setBusy(false)
     }
