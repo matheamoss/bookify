@@ -4,7 +4,7 @@ A book library with playlists, ratings, profiles and reader following.
 
 ## Run with Docker
 
-Use Docker for both development and production workflows.
+Use Docker for both development and production workflows. Copy `.env.example` to `.env` and enter the SMTP credentials before starting Bookify.
 
 - `make dev` starts the local hot-reload app at `http://127.0.0.1:5173`.
 - `make dev-detach` starts local development in the background.
@@ -16,7 +16,7 @@ Use Docker for both development and production workflows.
 
 Local Docker development stores test data in the `bookify_dev_data` volume. Production stores account and library data in the `bookify_data` volume.
 
-Node.js 24 or newer is still supported for direct local work with `npm ci` and `npm run dev`, but Docker/Make is the preferred path. Server deployment instructions are in [DEPLOYMENT.md](DEPLOYMENT.md).
+Node.js 24 or newer is still supported for direct local work with `npm ci` and `npm run dev`, but Docker/Make is the preferred path. The app opens at `http://localhost:5173`; the same command also starts the account API. Local account data is stored in `data/bookify.sqlite`, which is ignored by Git. Server deployment instructions are in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Project layout
 

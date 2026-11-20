@@ -10,6 +10,8 @@ RUN npm run build
 FROM node:24-alpine
 ENV NODE_ENV=production BOOKIFY_PORT=3000 BOOKIFY_LISTEN_HOST=0.0.0.0 DB_PATH=/data/bookify.sqlite STATIC_ROOT=/app/dist COOKIE_SECURE=true
 WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
 COPY server ./server
 RUN mkdir -p /data && chown -R node:node /data /app

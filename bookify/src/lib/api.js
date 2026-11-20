@@ -16,6 +16,10 @@ export const authApi = {
   register: details => request('/api/register', jsonOptions('POST', details)),
   login: details => request('/api/login', jsonOptions('POST', details)),
   logout: () => request('/api/logout', { method: 'POST' }),
+  verifyEmail: token => request('/api/verify-email', jsonOptions('POST', { token })),
+  resendVerification: email => request('/api/resend-verification', jsonOptions('POST', { email })),
+  forgotPassword: email => request('/api/forgot-password', jsonOptions('POST', { email })),
+  resetPassword: (token, password) => request('/api/reset-password', jsonOptions('POST', { token, password })),
 }
 
 export const libraryApi = {
