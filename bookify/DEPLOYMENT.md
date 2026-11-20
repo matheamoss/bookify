@@ -36,7 +36,7 @@ The local development test user is enabled only in development:
 - Email: `test@bookify.local`
 - Password: `Testbruker123!`
 
-Registration uses name, email, and a password of at least 12 characters. Passwords are hashed; session cookies are HTTP-only. Email verification and password reset are turned off by default (`BOOKIFY_EMAIL_ENABLED=false`): new accounts are signed in right after registering, and there is no password reset. When enabled, new accounts must confirm their email address, and password-reset and confirmation links are single-use and expire after one hour. Existing accounts are treated as already verified during the database migration.
+Registration uses name, email, and a password of at least 12 characters. Passwords are hashed; session cookies are HTTP-only. Email verification and password reset are turned off by default (`BOOKIFY_EMAIL_ENABLED=false`): new accounts are signed in right after registering, and there is no password reset by email. Signed-in readers can still change their password and delete their account on the Profile page. When enabled, new accounts must confirm their email address, and password-reset and confirmation links are single-use and expire after one hour. Existing accounts are treated as already verified during the database migration.
 
 ## Google Workspace email (optional, currently off)
 

@@ -40,5 +40,6 @@ export default function App() {
   }
   if (session.status === 'guest') return <AuthScreen onSignedIn={signedIn} emailEnabled={emailEnabled} />
   return <BookifyApp key={session.user.id} user={session.user}
-    initialLibrary={session.library} initialVersion={session.version} onLogout={logout} />
+    initialLibrary={session.library} initialVersion={session.version} onLogout={logout}
+    onAccountDeleted={() => setSession({ status: 'guest', user: null, library: null })} />
 }

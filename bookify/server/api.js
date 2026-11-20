@@ -39,6 +39,13 @@ function validateLibrary(value) {
       typeof book.title === 'string' && book.title.length <= 300 && typeof book.author === 'string' && book.author.length <= 300)
 }
 
+async function passwordMatches(userId, password) {
+  const row = db.prepare('SELECT password_hash, salt FROM users WHERE id = ?').get(userId)
+  if (!row || typeof password !== 'string') return false
+  const hash = await passwordHash(password, row.salt)
+  return timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(row.password_hash, 'hex'))
+}
+
 const hexColor = /^#[0-9a-f]{3,8}$/i
 const workKeyPattern = /^\/works\/OL\d+W$/
 
@@ -177,6 +184,30 @@ export async function api(req, res, pathname) {
   const user = currentUser(req)
   if (req.method === 'GET' && pathname === '/api/me') return send(res, 200, { user })
   if (!user) return send(res, 401, { error: 'Please sign in.' })
+
+  if (req.method === 'PUT' && pathname === '/api/password') {
+    const { currentPassword, newPassword } = await readJson(req)
+    if (typeof newPassword !== 'string' || newPassword.length < 12 || newPassword.length > 200)
+      return send(res, 400, { error: 'Use a new password of at least 12 characters.' })
+    if (limited(req, `password:${user.id}`)) return send(res, 429, { error: 'Too many attempts. Try again later.' })
+    if (!await passwordMatches(user.id, currentPassword)) return send(res, 401, { error: 'Your current password is incorrect.' })
+    const salt = randomBytes(16).toString('hex')
+    const hash = await passwordHash(newPassword, salt)
+    db.prepare('UPDATE users SET password_hash = ?, salt = ? WHERE id = ?').run(hash, salt, user.id)
+    // Sign out every other device, then give this browser a fresh session.
+    db.prepare('DELETE FROM sessions WHERE user_id = ?').run(user.id)
+    clearLimit(req, `password:${user.id}`)
+    return makeSession(res, user)
+  }
+
+  if (req.method === 'DELETE' && pathname === '/api/account') {
+    const { password } = await readJson(req)
+    if (limited(req, `delete:${user.id}`)) return send(res, 429, { error: 'Too many attempts. Try again later.' })
+    if (!await passwordMatches(user.id, password)) return send(res, 401, { error: 'Your password is incorrect.' })
+    // Sessions, library, follows and email tokens are removed by ON DELETE CASCADE.
+    db.prepare('DELETE FROM users WHERE id = ?').run(user.id)
+    return send(res, 200, { ok: true }, { 'set-cookie': cookie('', 0) })
+  }
 
   if (req.method === 'PUT' && pathname === '/api/profile/visibility') {
     const { isPublic } = await readJson(req)

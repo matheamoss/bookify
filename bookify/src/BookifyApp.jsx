@@ -13,7 +13,7 @@ import ProfilePage from './pages/ProfilePage'
 import RankingsPage from './pages/RankingsPage'
 import ReadersPage from './pages/ReadersPage'
 
-export default function BookifyApp({ user, initialLibrary, initialVersion, onLogout }) {
+export default function BookifyApp({ user, initialLibrary, initialVersion, onLogout, onAccountDeleted }) {
   const [page, setPage] = useState('Home')
   const [selectedList, setSelectedList] = useState(null)
   const [isPublic, setIsPublic] = useState(Boolean(user.is_public))
@@ -139,7 +139,7 @@ export default function BookifyApp({ user, initialLibrary, initialVersion, onLog
             visibilityBusy={visibilityBusy} saveError={saveError}
             onToggleVisibility={toggleVisibility} onSelectList={selectList}
             onSelectLibraryView={selectList}
-            onImport={library.importFromDevice} onSignOut={signOut} />
+            onImport={library.importFromDevice} onSignOut={signOut} onAccountDeleted={onAccountDeleted} />
         )}
       </main>
       <BookDialog book={details.book} description={details.description} onClose={details.closeBook} />
