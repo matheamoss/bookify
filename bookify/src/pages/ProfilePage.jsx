@@ -23,7 +23,7 @@ export default function ProfilePage({
         <div>
           <strong>{isPublic ? 'Public profile' : 'Private profile'}</strong>
           <p>{isPublic
-            ? 'Other readers can find you and see your playlists, saved books and ratings. Your email stays private.'
+            ? 'Anyone visiting Bookify can find you and see your playlists, saved books, ratings and notes. Your email stays private.'
             : 'Only you can see your playlists and library.'}</p>
         </div>
         <button onClick={onToggleVisibility} disabled={visibilityBusy}>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useAuth } from '../lib/authContext'
 import { starCount } from '../lib/books'
 import BookCover from './BookCover'
 
@@ -9,6 +10,7 @@ export default function BookCard({
   const review = reviews?.[book.id] || ''
   // Keep the note local while typing and store it when the field loses focus.
   const [draft, setDraft] = useState(null)
+  const { user } = useAuth()
 
   function commitReview() {
     if (draft !== null && draft !== review) onReview(book, draft)
@@ -52,6 +54,7 @@ export default function BookCard({
               value={draft ?? review}
               onChange={event => setDraft(event.target.value)}
               onBlur={commitReview}
+              onFocus={user ? undefined : event => { event.target.blur(); onReview(book, review) }}
               placeholder="Write what you thought..."
               maxLength={500}
               rows={3}

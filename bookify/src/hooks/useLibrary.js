@@ -3,7 +3,7 @@ import { libraryApi } from '../lib/api'
 import { emptyLists, findStarterCover, starterBooks } from '../lib/books'
 import { readLocal } from '../lib/localLibrary'
 
-export function useLibrary(initialLibrary, initialVersion = null) {
+export function useLibrary(initialLibrary, initialVersion = null, { persist = true } = {}) {
   const [catalog, setCatalog] = useState(initialLibrary?.catalog || starterBooks)
   const [lists, setLists] = useState(initialLibrary?.lists || emptyLists)
   const [ratings, setRatings] = useState(initialLibrary?.ratings || {})
@@ -23,11 +23,12 @@ export function useLibrary(initialLibrary, initialVersion = null) {
   }, [])
 
   useEffect(() => {
+    if (!persist) return
     const timer = setTimeout(() => {
       saveNow({ catalog, lists, ratings, reviews, ranking }).catch(() => {})
     }, 300)
     return () => clearTimeout(timer)
-  }, [catalog, lists, ratings, reviews, ranking, saveNow])
+  }, [catalog, lists, ratings, reviews, ranking, saveNow, persist])
 
   // Look up covers for starter books once. Books marked coverChecked are not looked up again.
   useEffect(() => {

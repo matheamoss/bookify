@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { MobileNav, Sidebar, Topbar } from './components/AppNavigation'
 import BookDialog from './components/BookDialog'
+import SignInPrompt from './components/SignInPrompt'
 import { useBookDetails } from './hooks/useBookDetails'
 import { useBookSearch } from './hooks/useBookSearch'
 import { useLibrary } from './hooks/useLibrary'
 import { peopleApi } from './lib/api'
+import { useAuth } from './lib/authContext'
+import { libraryPath, navigateTo, pagePaths, readerPath, useRoute } from './lib/router'
 import AboutPage from './pages/AboutPage'
 import DiscoverPage from './pages/DiscoverPage'
 import HomePage from './pages/HomePage'
@@ -13,63 +16,32 @@ import ProfilePage from './pages/ProfilePage'
 import RankingsPage from './pages/RankingsPage'
 import ReadersPage from './pages/ReadersPage'
 
-export default function BookifyApp({ user, initialLibrary, initialVersion, onLogout, onAccountDeleted }) {
-  const [page, setPage] = useState('Home')
-  const [selectedList, setSelectedList] = useState(null)
-  const [isPublic, setIsPublic] = useState(Boolean(user.is_public))
-  const [visibilityBusy, setVisibilityBusy] = useState(false)
-  const historyReady = useRef(false)
+const memberPages = {
+  'Your Library': { title: 'Your Library', message: 'Sign in or create an account to collect books in your own playlists.' },
+  Rankings: { title: 'Book Rankings', message: 'Sign in or create an account to build your personal book ranking.' },
+  Profile: { title: 'Your profile', message: 'Sign in or create an account to get your own reader profile.' },
+}
 
-  const library = useLibrary(initialLibrary, initialVersion)
+export default function BookifyApp({ user, initialLibrary, initialVersion, onLogout, onAccountDeleted }) {
+  const { page, param } = useRoute()
+  const selectedList = page === 'Your Library' ? param : null
+  const { requireAuth } = useAuth()
+  const [isPublic, setIsPublic] = useState(Boolean(user?.is_public))
+  const [visibilityBusy, setVisibilityBusy] = useState(false)
+
+  const library = useLibrary(initialLibrary, initialVersion, { persist: Boolean(user) })
   const search = useBookSearch()
   const details = useBookDetails()
   const { catalog, lists, ratings, reviews, ranking, saveError, setSaveError } = library
 
-  useEffect(() => {
-    const currentState = { bookify: true, page: 'Home', selectedList: null }
-    window.history.replaceState(currentState, '', window.location.pathname)
-    historyReady.current = true
-
-    function handlePopState(event) {
-      const state = event.state
-      if (!state?.bookify) {
-        setPage('Home')
-        setSelectedList(null)
-        return
-      }
-      setPage(state.page || 'Home')
-      setSelectedList(state.selectedList || null)
-    }
-
-    window.addEventListener('popstate', handlePopState)
-    return () => window.removeEventListener('popstate', handlePopState)
-  }, [])
-
-  function pushNavigation(nextPage, nextSelectedList = null) {
-    if (!historyReady.current) return
-    window.history.pushState(
-      { bookify: true, page: nextPage, selectedList: nextSelectedList },
-      '',
-      window.location.pathname,
-    )
+  // Guests can browse; anything that changes a library asks them to sign in first.
+  const guard = (action, reason) => (...args) => user ? action(...args) : requireAuth(reason)
+  const navigate = nextPage => {
+    if (!user && memberPages[nextPage]) return requireAuth(memberPages[nextPage].message)
+    navigateTo(pagePaths[nextPage] || '/')
   }
-
-  function navigate(nextPage) {
-    setPage(nextPage)
-    setSelectedList(null)
-    pushNavigation(nextPage)
-  }
-
-  function selectList(id) {
-    setSelectedList(id)
-    setPage('Your Library')
-    pushNavigation('Your Library', id)
-  }
-
-  function selectLibraryView(id) {
-    setSelectedList(id)
-    pushNavigation('Your Library', id)
-  }
+  const selectList = guard(id => navigateTo(libraryPath(id)), 'Sign in or create an account to open your playlists.')
+  const createList = guard(library.createList, 'Sign in or create an account to create playlists.')
 
   async function signOut() {
     try {
@@ -100,15 +72,15 @@ export default function BookifyApp({ user, initialLibrary, initialVersion, onLog
   const bookActions = {
     catalog, lists, ratings, reviews,
     onBookDetails: details.openBook,
-    onRate: library.rateBook,
-    onReview: library.reviewBook,
-    onAdd: library.addBook,
+    onRate: guard(library.rateBook, 'Sign in or create an account to rate books.'),
+    onReview: guard(library.reviewBook, 'Sign in or create an account to write notes about books.'),
+    onAdd: guard(library.addBook, 'Sign in or create an account to add books to your playlists.'),
   }
 
   return (
     <div className="app">
       <Sidebar page={page} lists={lists} onNavigate={navigate}
-        onSelectList={selectList} onCreateList={library.createList} />
+        onSelectList={selectList} onCreateList={createList} />
       <main className="main">
         <Topbar user={user} onHome={() => navigate('Home')} onProfile={() => navigate('Profile')} />
         {saveError && page !== 'Profile' && (
@@ -117,24 +89,28 @@ export default function BookifyApp({ user, initialLibrary, initialVersion, onLog
             <button onClick={() => window.location.reload()}>Reload</button>
           </div>
         )}
+        {!user && memberPages[page] && <SignInPrompt {...memberPages[page]} />}
         {page === 'Home' && (
           <HomePage {...bookActions} onNavigate={navigate} onSelectList={selectList}
-            onCreateList={library.createList} />
+            onCreateList={createList} />
         )}
         {page === 'Discover' && <DiscoverPage {...bookActions} search={search} />}
-        {page === 'Your Library' && (
+        {user && page === 'Your Library' && (
           <LibraryPage {...bookActions} selectedList={selectedList}
-            onSelectList={selectLibraryView} onCreateList={library.createList}
+            onSelectList={selectList} onCreateList={createList}
             onRemove={library.removeBook} />
         )}
-        {page === 'Rankings' && (
+        {user && page === 'Rankings' && (
           <RankingsPage catalog={catalog} ratings={ratings} ranking={ranking}
             onMove={library.moveRankedBook} onRemove={library.removeRankedBook}
             onAddToRanking={library.addRankedBook} />
         )}
-        {page === 'Readers' && <ReadersPage onBookDetails={details.openBook} />}
+        {page === 'Readers' && (
+          <ReadersPage personId={param} onOpenPerson={id => navigateTo(readerPath(id))}
+            onBack={() => navigateTo(readerPath(null))} onBookDetails={details.openBook} />
+        )}
         {page === 'About' && <AboutPage />}
-        {page === 'Profile' && (
+        {user && page === 'Profile' && (
           <ProfilePage user={user} lists={lists} ratings={ratings} isPublic={isPublic}
             visibilityBusy={visibilityBusy} saveError={saveError}
             onToggleVisibility={toggleVisibility} onSelectList={selectList}

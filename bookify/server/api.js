@@ -183,6 +183,33 @@ export async function api(req, res, pathname) {
 
   const user = currentUser(req)
   if (req.method === 'GET' && pathname === '/api/me') return send(res, 200, { user })
+  // Public profiles can be browsed without an account; everything below needs a session.
+  if (req.method === 'GET' && pathname === '/api/people') {
+    const query = new URL(req.url, 'http://localhost').searchParams.get('q')?.trim() || ''
+    if (query.length > 80) return send(res, 400, { error: 'Search is too long.' })
+    const escaped = query.replace(/[\\%_]/g, character => `\\${character}`)
+    const people = db.prepare(`
+      SELECT users.id, users.name,
+        (SELECT COUNT(*) FROM follows WHERE followed_id = users.id) AS followers
+      FROM users
+      WHERE users.is_public = 1 AND (? IS NULL OR users.id <> ?) AND users.name LIKE ? ESCAPE '\\'
+      ORDER BY users.name COLLATE NOCASE, users.id
+      LIMIT 30
+    `).all(user?.id ?? null, user?.id ?? null, `%${escaped}%`)
+    return send(res, 200, { people })
+  }
+
+  const profileMatch = /^\/api\/people\/([a-f0-9]{32})$/.exec(pathname)
+  if (profileMatch && req.method === 'GET') {
+    const person = db.prepare('SELECT id, name FROM users WHERE id = ? AND is_public = 1').get(profileMatch[1])
+    if (!person) return send(res, 404, { error: 'Profile not found.' })
+    const row = db.prepare('SELECT payload FROM libraries WHERE user_id = ?').get(person.id)
+    const followers = db.prepare('SELECT COUNT(*) AS count FROM follows WHERE followed_id = ?').get(person.id).count
+    const following = db.prepare('SELECT COUNT(*) AS count FROM follows WHERE follower_id = ?').get(person.id).count
+    const isFollowing = !!user && !!db.prepare('SELECT 1 FROM follows WHERE follower_id = ? AND followed_id = ?').get(user.id, person.id)
+    return send(res, 200, { person: { ...person, followers, following, isFollowing }, library: sanitizeLibrary(row ? JSON.parse(row.payload) : {}) })
+  }
+
   if (!user) return send(res, 401, { error: 'Please sign in.' })
 
   if (req.method === 'PUT' && pathname === '/api/password') {
@@ -216,21 +243,6 @@ export async function api(req, res, pathname) {
     return send(res, 200, { is_public: isPublic ? 1 : 0 })
   }
 
-  if (req.method === 'GET' && pathname === '/api/people') {
-    const query = new URL(req.url, 'http://localhost').searchParams.get('q')?.trim() || ''
-    if (query.length > 80) return send(res, 400, { error: 'Search is too long.' })
-    const escaped = query.replace(/[\\%_]/g, character => `\\${character}`)
-    const people = db.prepare(`
-      SELECT users.id, users.name,
-        (SELECT COUNT(*) FROM follows WHERE followed_id = users.id) AS followers
-      FROM users
-      WHERE users.is_public = 1 AND users.id <> ? AND users.name LIKE ? ESCAPE '\\'
-      ORDER BY users.name COLLATE NOCASE, users.id
-      LIMIT 30
-    `).all(user.id, `%${escaped}%`)
-    return send(res, 200, { people })
-  }
-
   if (req.method === 'GET' && pathname === '/api/following') {
     const people = db.prepare(`
       SELECT users.id, users.name,
@@ -240,17 +252,6 @@ export async function api(req, res, pathname) {
       ORDER BY follows.created_at DESC
     `).all(user.id)
     return send(res, 200, { people })
-  }
-
-  const profileMatch = /^\/api\/people\/([a-f0-9]{32})$/.exec(pathname)
-  if (profileMatch && req.method === 'GET') {
-    const person = db.prepare('SELECT id, name FROM users WHERE id = ? AND is_public = 1').get(profileMatch[1])
-    if (!person) return send(res, 404, { error: 'Profile not found.' })
-    const row = db.prepare('SELECT payload FROM libraries WHERE user_id = ?').get(person.id)
-    const followers = db.prepare('SELECT COUNT(*) AS count FROM follows WHERE followed_id = ?').get(person.id).count
-    const following = db.prepare('SELECT COUNT(*) AS count FROM follows WHERE follower_id = ?').get(person.id).count
-    const isFollowing = !!db.prepare('SELECT 1 FROM follows WHERE follower_id = ? AND followed_id = ?').get(user.id, person.id)
-    return send(res, 200, { person: { ...person, followers, following, isFollowing }, library: sanitizeLibrary(row ? JSON.parse(row.payload) : {}) })
   }
 
   const followMatch = /^\/api\/people\/([a-f0-9]{32})\/follow$/.exec(pathname)

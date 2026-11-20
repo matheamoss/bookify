@@ -10,6 +10,7 @@ Use Docker for both development and production workflows. Email verification and
 - `make dev-detach` starts local development in the background.
 - `make dev-down` stops local development.
 - `make lint` runs ESLint in Docker.
+- `make test` runs the API tests in Docker (`npm test` without Docker).
 - `make build` runs the production frontend build in Docker.
 - `make prod` builds and starts the production container.
 - `make prod-logs` follows production logs.
@@ -20,8 +21,9 @@ Node.js 24 or newer is still supported for direct local work with `npm ci` and `
 
 ## Project layout
 
-- `src/App.jsx`: session loading and sign-in state.
-- `src/BookifyApp.jsx`: page selection and shared actions.
+- `src/App.jsx`: session loading, guest mode and the sign-in dialog.
+- `src/lib/router.js`: page URLs (`/discover`, `/library/:id`, `/readers/:id`, …).
+- `src/BookifyApp.jsx`: page selection and shared actions. Guests can browse; actions that need an account open the sign-in dialog.
 - `src/pages/`: complete screens, including books, profile and readers.
 - `src/components/`: reusable book, playlist and navigation elements.
 - `src/hooks/`: library persistence, book search and book details.
@@ -29,3 +31,4 @@ Node.js 24 or newer is still supported for direct local work with `npm ci` and `
 - `src/styles/`: styles grouped by page and component area.
 - `server/index.js`: HTTP entry point.
 - `server/api.js`, `auth.js`, `db.js`, `http.js`: routes, account logic, database and static files.
+- `server/api.test.js`: API tests that start the real server against a temporary database.
