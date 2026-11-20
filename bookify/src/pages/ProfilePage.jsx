@@ -15,7 +15,6 @@ export default function ProfilePage({
         <div>
           <h1 className="page-title" id="profile-heading">{user.name}</h1>
           <p>{user.email}</p>
-          <span className="verification-note">Email saved for this account. Mail verification can be enabled when an email provider is connected.</span>
         </div>
       </header>
       <p className="intro">A little corner of the internet for all your favorite stories.</p>
