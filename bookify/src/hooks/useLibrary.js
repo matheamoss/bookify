@@ -99,6 +99,10 @@ export function useLibrary(initialLibrary, initialVersion = null) {
     })
   }
 
+  function addRankedBook(bookId) {
+    setRanking(current => current.some(id => String(id) === String(bookId)) ? current : [...current, bookId])
+  }
+
   function removeRankedBook(bookId) {
     setRanking(current => current.filter(id => String(id) !== String(bookId)))
   }
@@ -116,7 +120,7 @@ export function useLibrary(initialLibrary, initialVersion = null) {
 
   return {
     catalog, lists, ratings, reviews, ranking, saveError, setSaveError,
-    createList, addBook, removeBook, rateBook, reviewBook, moveRankedBook, removeRankedBook,
+    createList, addBook, removeBook, rateBook, reviewBook, moveRankedBook, addRankedBook, removeRankedBook,
     importFromDevice, saveNow,
   }
 }

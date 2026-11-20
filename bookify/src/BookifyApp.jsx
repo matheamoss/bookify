@@ -129,7 +129,8 @@ export default function BookifyApp({ user, initialLibrary, initialVersion, onLog
         )}
         {page === 'Rankings' && (
           <RankingsPage catalog={catalog} ratings={ratings} ranking={ranking}
-            onMove={library.moveRankedBook} onRemove={library.removeRankedBook} />
+            onMove={library.moveRankedBook} onRemove={library.removeRankedBook}
+            onAddToRanking={library.addRankedBook} />
         )}
         {page === 'Readers' && <ReadersPage onBookDetails={details.openBook} />}
         {page === 'About' && <AboutPage />}
