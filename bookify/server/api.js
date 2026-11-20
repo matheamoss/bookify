@@ -39,6 +39,34 @@ function validateLibrary(value) {
       typeof book.title === 'string' && book.title.length <= 300 && typeof book.author === 'string' && book.author.length <= 300)
 }
 
+const hexColor = /^#[0-9a-f]{3,8}$/i
+const workKeyPattern = /^\/works\/OL\d+W$/
+
+// Strip fields that are rendered for other readers (links, styles, star counts) unless they have the expected shape.
+function sanitizeLibrary(library) {
+  const catalog = (library.catalog || []).map(book => {
+    const clean = { id: book.id, title: book.title, author: book.author }
+    if (typeof book.genre === 'string' && book.genre.length <= 80) clean.genre = book.genre
+    if (typeof book.color === 'string' && hexColor.test(book.color)) clean.color = book.color
+    if (Number.isSafeInteger(book.coverId) && book.coverId > 0) clean.coverId = book.coverId
+    if (Number.isSafeInteger(book.year)) clean.year = book.year
+    if (typeof book.workKey === 'string' && workKeyPattern.test(book.workKey)) clean.workKey = book.workKey
+    if (book.coverChecked === true) clean.coverChecked = true
+    return clean
+  })
+  const ratings = Object.fromEntries(Object.entries(library.ratings || {})
+    .filter(([, rating]) => Number.isInteger(rating) && rating >= 1 && rating <= 5))
+  const reviews = Object.fromEntries(Object.entries(library.reviews || {})
+    .filter(([, review]) => typeof review === 'string' && review.length <= 500))
+  const ranking = (library.ranking || []).filter(id => typeof id === 'string' || typeof id === 'number')
+  const lists = (library.lists || []).map(list => ({
+    id: list.id,
+    name: list.name,
+    books: list.books.filter(id => typeof id === 'string' || typeof id === 'number'),
+  }))
+  return { lists, ratings, reviews, catalog, ranking }
+}
+
 export async function api(req, res, pathname) {
   if (req.method === 'GET' && pathname === '/api/health') return send(res, 200, { ok: true })
   if (!['GET', 'HEAD'].includes(req.method) && !sameOrigin(req)) return send(res, 403, { error: 'Request origin is not allowed.' })
@@ -190,7 +218,7 @@ export async function api(req, res, pathname) {
     const followers = db.prepare('SELECT COUNT(*) AS count FROM follows WHERE followed_id = ?').get(person.id).count
     const following = db.prepare('SELECT COUNT(*) AS count FROM follows WHERE follower_id = ?').get(person.id).count
     const isFollowing = !!db.prepare('SELECT 1 FROM follows WHERE follower_id = ? AND followed_id = ?').get(user.id, person.id)
-    return send(res, 200, { person: { ...person, followers, following, isFollowing }, library: row ? JSON.parse(row.payload) : { lists: [], catalog: [], ratings: {} } })
+    return send(res, 200, { person: { ...person, followers, following, isFollowing }, library: sanitizeLibrary(row ? JSON.parse(row.payload) : {}) })
   }
 
   const followMatch = /^\/api\/people\/([a-f0-9]{32})\/follow$/.exec(pathname)
@@ -222,13 +250,7 @@ export async function api(req, res, pathname) {
     db.prepare(`
       INSERT INTO libraries (user_id, payload, updated_at) VALUES (?, ?, ?)
       ON CONFLICT(user_id) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at
-    `).run(user.id, JSON.stringify({
-      lists: library.lists,
-      ratings: library.ratings,
-      reviews: library.reviews || {},
-      catalog: library.catalog,
-      ranking: library.ranking || [],
-    }), version)
+    `).run(user.id, JSON.stringify(sanitizeLibrary(library)), version)
     return send(res, 200, { ok: true, version })
   }
   return send(res, 404, { error: 'Not found.' })
