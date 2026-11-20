@@ -1,12 +1,13 @@
 import { useState } from 'react'
+import { coverColor } from '../lib/books'
 
 export default function BookCover({ book }) {
   const [failedCoverId, setFailedCoverId] = useState(null)
   const failed = failedCoverId === book.coverId
 
   return (
-    <figure className="book-cover" style={{ background: book.color || '#455d50' }}>
-      {book.coverId && !failed ? (
+    <figure className="book-cover" style={{ background: coverColor(book) }}>
+      {Number.isInteger(book.coverId) && !failed ? (
         <img
           src={`https://covers.openlibrary.org/b/id/${book.coverId}-M.jpg?default=false`}
           alt={`Cover of ${book.title}`}

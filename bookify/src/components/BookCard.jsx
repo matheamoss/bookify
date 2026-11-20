@@ -1,10 +1,11 @@
 import { useState } from 'react'
+import { starCount } from '../lib/books'
 import BookCover from './BookCover'
 
 export default function BookCard({
   book, ratings, reviews, lists, onDetails, onRate, onReview, onAdd, readOnly = false, children,
 }) {
-  const rating = ratings?.[book.id] || 0
+  const rating = starCount(ratings?.[book.id])
   const review = reviews?.[book.id] || ''
   // Keep the note local while typing and store it when the field loses focus.
   const [draft, setDraft] = useState(null)
