@@ -56,6 +56,13 @@ export function limited(req, email) {
   return entry.count > 8
 }
 
+export function pruneExpired() {
+  const now = Date.now()
+  db.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(now)
+  db.prepare('DELETE FROM email_tokens WHERE expires_at <= ?').run(now)
+  for (const [key, entry] of attempts) if (entry.until < now) attempts.delete(key)
+}
+
 export async function passwordHash(password, salt) {
   return (await scrypt(password, salt, 64)).toString('hex')
 }
