@@ -1,7 +1,7 @@
 services:
   bookify:
     build: .
-    image: bookify:prod
+    image: ${BOOKIFY_IMAGE:-ghcr.io/matheamoss/bookify:latest}
     restart: unless-stopped
     environment:
       NODE_ENV: production

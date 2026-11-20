@@ -10,7 +10,8 @@ Bookify runs as one container: the website, account API, and SQLite database. Th
 
 Useful production commands:
 
-- `make prod` builds and starts the production container in the background.
+- `make prod` builds the image on the server and starts the production container in the background.
+- `make prod-pull` pulls the image that GitHub Actions publishes to `ghcr.io/matheamoss/bookify:latest` on every push to `main`, then starts it without building. If the package is private, run `docker login ghcr.io` on the server first with a token that has `read:packages`. Set `BOOKIFY_IMAGE` to use another tag, for example a commit SHA.
 - `make prod-build` builds the production image.
 - `make prod-down` stops the production container.
 - `make prod-logs` follows logs from the production container.
