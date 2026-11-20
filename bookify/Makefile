@@ -2,7 +2,7 @@ COMPOSE ?= docker compose
 DEV_COMPOSE = $(COMPOSE) -f docker-compose.dev.yml
 PROD_COMPOSE = $(COMPOSE) -f docker-compose.yml
 
-.PHONY: help dev dev-detach dev-build dev-down dev-logs dev-shell prod prod-pull prod-build prod-down prod-logs ps lint build clean-dev-data
+.PHONY: help dev dev-detach dev-build dev-down dev-logs dev-shell test prod prod-pull prod-build prod-down prod-logs ps lint build clean-dev-data
 
 help:
 	@printf "\nBookify Docker commands\n"
@@ -19,6 +19,7 @@ help:
 	@printf "  make prod-logs    Follow production logs\n"
 	@printf "  make ps           Show Docker services\n"
 	@printf "  make lint         Run ESLint in Docker\n"
+	@printf "  make test         Run the API tests in Docker\n"
 	@printf "  make build        Run production build in Docker\n\n"
 
 dev:
@@ -61,6 +62,9 @@ ps:
 
 lint:
 	$(DEV_COMPOSE) run --rm bookify-dev sh -c "npm ci && npm run lint"
+
+test:
+	$(DEV_COMPOSE) run --rm bookify-dev sh -c "npm ci && npm test"
 
 build:
 	$(DEV_COMPOSE) run --rm bookify-dev sh -c "npm ci && npm run build"
